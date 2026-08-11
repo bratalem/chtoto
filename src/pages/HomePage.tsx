@@ -1,13 +1,154 @@
+import { useEffect, useRef, useState } from 'react';
+import { RoomScene } from '../components/RoomScene';
+import bloodyHand from '../assets/bloody-hand.jpg';
+import scaryEyes from '../assets/scary-eyes.jpg';
+
+export type DifficultyName = 'Легко' | 'Средний' | 'Сложный' | 'Кошмар';
+
+type Difficulty = {
+  name: DifficultyName;
+  tagline: string;
+  stats: string[];
+  batteryDrainSeconds: number;
+};
+
+const difficulties: Difficulty[] = [
+  {
+    name: 'Легко',
+    tagline: 'Монстры приходят редко, есть больше времени на реакцию.',
+    stats: ['Фонарик: -1% каждые 4 секунды', 'Опасность: низкая', 'Время на отпугивание: длинное'],
+    batteryDrainSeconds: 4,
+  },
+  {
+    name: 'Средний',
+    tagline: 'Для сбалансированного опыта.',
+    stats: ['Фонарик: -1% каждые 3 секунды', 'Опасность: обычная', 'Время на отпугивание: среднее'],
+    batteryDrainSeconds: 3,
+  },
+  {
+    name: 'Сложный',
+    tagline: 'Монстры появляются чаще, а батарейку придется беречь.',
+    stats: ['Фонарик: -1% каждые 2 секунды', 'Опасность: высокая', 'Время на отпугивание: короткое'],
+    batteryDrainSeconds: 2,
+  },
+  {
+    name: 'Кошмар',
+    tagline: 'Для самых смелых.',
+    stats: ['Фонарик: -1% каждую секунду', 'Монстры приходят очень часто', 'Время на отпугивание: очень короткое'],
+    batteryDrainSeconds: 1,
+  },
+];
+
+type Screen = 'menu' | 'story' | 'eyes' | 'room';
+
 export function HomePage() {
+  const [isDifficultyOpen, setIsDifficultyOpen] = useState(false);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>(difficulties[1]);
+  const [hoveredDifficulty, setHoveredDifficulty] = useState<Difficulty>(difficulties[1]);
+  const [screen, setScreen] = useState<Screen>('menu');
+  const timers = useRef<number[]>([]);
+
+  useEffect(() => {
+    return () => {
+      timers.current.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, []);
+
+  function startIntro() {
+    setScreen('story');
+    timers.current.forEach((timer) => window.clearTimeout(timer));
+    timers.current = [
+      window.setTimeout(() => setScreen('eyes'), 6200),
+      window.setTimeout(() => setScreen('room'), 6300),
+    ];
+  }
+
+  function enterRoom() {
+    timers.current.forEach((timer) => window.clearTimeout(timer));
+    timers.current = [window.setTimeout(() => setScreen('room'), 100)];
+    setScreen('eyes');
+  }
+
   return (
-    <main className="container">
-      <section className="hello">
-        <h1>Привет! 🚀</h1>
-        <p>Это твой проект. Пока тут пусто — самое интересное впереди.</p>
-        <p className="hello__hint">
-          Открой Codex и опиши свою идею — этот экран станет твоим приложением.
-        </p>
-      </section>
+    <main className={`horror-screen horror-screen-${screen}`}>
+      {screen === 'menu' && (
+        <>
+          <img className="handprint handprint-left" src={bloodyHand} alt="" aria-hidden="true" />
+          <img className="handprint handprint-right" src={bloodyHand} alt="" aria-hidden="true" />
+          <section className="horror-menu" aria-label="Главное меню">
+            <h1 className="blood-title">Motel Horror</h1>
+            <div className="menu-actions">
+              <button className="horror-button horror-button-primary" type="button" onClick={startIntro}>
+                Играть
+              </button>
+              <button
+                className="horror-button"
+                type="button"
+                onClick={() => setIsDifficultyOpen((current) => !current)}
+              >
+                Выбрать сложность
+              </button>
+            </div>
+
+            {isDifficultyOpen && (
+              <div className="difficulty-layout" aria-label="Выбор сложности">
+                <div className="difficulty-menu">
+                  {difficulties.map((difficulty) => (
+                    <button
+                      className="difficulty-button"
+                      key={difficulty.name}
+                      type="button"
+                      onClick={() => setSelectedDifficulty(difficulty)}
+                      onFocus={() => setHoveredDifficulty(difficulty)}
+                      onMouseEnter={() => setHoveredDifficulty(difficulty)}
+                    >
+                      <span>{difficulty.name}</span>
+                      {selectedDifficulty.name === difficulty.name && <span aria-hidden="true">✓</span>}
+                    </button>
+                  ))}
+                </div>
+                <aside className="difficulty-stats">
+                  <h2>{hoveredDifficulty.name}</h2>
+                  <p>{hoveredDifficulty.tagline}</p>
+                  <ul>
+                    {hoveredDifficulty.stats.map((stat) => (
+                      <li key={stat}>{stat}</li>
+                    ))}
+                  </ul>
+                </aside>
+              </div>
+            )}
+          </section>
+        </>
+      )}
+
+      {screen === 'story' && (
+        <section className="story-panel story-panel-animated" aria-label="Предыстория">
+          <h1>Motel Horror</h1>
+          <p>
+            Ночь застала тебя в дороге. Дождь бил по стеклу, бензин почти закончился, и единственным
+            светом впереди оказалась вывеска старого мотеля.
+          </p>
+          <p>
+            Ты снял комнату у домохозяйки-бабушки. Она улыбалась слишком долго, говорила слишком
+            тихо и почему-то знала твое имя до того, как ты его назвал.
+          </p>
+          <p>
+            За стенами что-то скребется. Телефон молчит. Дверь будто стала тяжелее. Твоя цель -
+            выжить 5 ночей.
+          </p>
+          <p className="story-difficulty">Сложность: {selectedDifficulty.name}</p>
+          <button className="horror-button horror-button-primary story-start" type="button" onClick={enterRoom}>
+            Начать
+          </button>
+        </section>
+      )}
+
+      {screen === 'eyes' && <img className="eyes-flash" src={scaryEyes} alt="" aria-hidden="true" />}
+
+      {screen === 'room' && (
+        <RoomScene difficultyName={selectedDifficulty.name} batteryDrainSeconds={selectedDifficulty.batteryDrainSeconds} />
+      )}
     </main>
   );
 }
