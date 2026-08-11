@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, MouseEvent } from 'react';
-import type { DifficultyName } from '../pages/HomePage';
+import scaryCorridor from '../assets/scary-corridor.jpg';
+import scaryGrandma from '../assets/scary-grandma.jpg';
 import scaryRoom from '../assets/scary-room.jpg';
 
 type Position = {
@@ -8,56 +9,63 @@ type Position = {
   y: number;
 };
 
-type AudioWindow = Window &
-  typeof globalThis & {
-    webkitAudioContext?: typeof AudioContext;
-  };
-
 type RoomSceneProps = {
-  difficultyName: DifficultyName;
+  difficultyName: string;
   batteryDrainSeconds: number;
 };
 
 export function RoomScene({ difficultyName, batteryDrainSeconds }: RoomSceneProps) {
   const [view, setView] = useState<Position>({ x: 0, y: 0 });
+  const [isDoorHovered, setIsDoorHovered] = useState(false);
+  const [isCorridorOpen, setIsCorridorOpen] = useState(false);
+  const [isApproachingCorridor, setIsApproachingCorridor] = useState(false);
+  const [isCorridorLightOn, setIsCorridorLightOn] = useState(false);
   const [isFlashlightOn, setIsFlashlightOn] = useState(true);
   const [canToggleFlashlight, setCanToggleFlashlight] = useState(true);
   const [battery, setBattery] = useState(100);
+  const [isGrandmaVisible, setIsGrandmaVisible] = useState(false);
+  const [grandmaRepelProgress, setGrandmaRepelProgress] = useState(0);
+  const [isFlashlightFlickering, setIsFlashlightFlickering] = useState(false);
   const [isNightTitleVisible, setIsNightTitleVisible] = useState(true);
-  const audioContext = useRef<AudioContext | null>(null);
   const pressedKeys = useRef<Set<string>>(new Set());
   const moveFrame = useRef<number | null>(null);
   const toggleTimer = useRef<number | null>(null);
+  const grandmaTimeout = useRef<number | null>(null);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.code === 'KeyF' && battery > 0) {
+      if (event.code === 'KeyE') {
         event.preventDefault();
-        if (!canToggleFlashlight) {
+        if (isCorridorOpen) {
+          setIsCorridorOpen(false);
+          setIsCorridorLightOn(false);
           return;
         }
+
+        if (!isDoorHovered) return;
+
+        setIsApproachingCorridor(true);
+        window.setTimeout(() => {
+          setIsCorridorOpen(true);
+          setIsApproachingCorridor(false);
+        }, 850);
+      }
+
+      if (event.code === 'KeyF' && battery > 0) {
+        event.preventDefault();
+        if (isCorridorOpen) {
+          setIsCorridorLightOn((current) => !current);
+          return;
+        }
+
+        if (!canToggleFlashlight) return;
 
         setIsFlashlightOn((current) => !current);
         setCanToggleFlashlight(false);
         toggleTimer.current = window.setTimeout(() => setCanToggleFlashlight(true), 700);
       }
 
-      if (event.code === 'ArrowLeft') {
-        event.preventDefault();
-        pressedKeys.current.add(event.code);
-      }
-
-      if (event.code === 'ArrowRight') {
-        event.preventDefault();
-        pressedKeys.current.add(event.code);
-      }
-
-      if (event.code === 'ArrowUp') {
-        event.preventDefault();
-        pressedKeys.current.add(event.code);
-      }
-
-      if (event.code === 'ArrowDown') {
+      if (event.code.startsWith('Arrow')) {
         event.preventDefault();
         pressedKeys.current.add(event.code);
       }
@@ -71,43 +79,29 @@ export function RoomScene({ difficultyName, batteryDrainSeconds }: RoomSceneProp
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
-
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [battery, canToggleFlashlight]);
+  }, [battery, canToggleFlashlight, isCorridorOpen, isDoorHovered]);
 
   useEffect(() => {
     function moveView() {
       setView((current) => {
-        if (pressedKeys.current.size === 0) {
-          return current;
-        }
+        if (pressedKeys.current.size === 0) return current;
 
         let nextX = current.x;
         let nextY = current.y;
         const speed = 0.035;
 
-        if (pressedKeys.current.has('ArrowLeft')) {
-          nextX -= speed;
-        }
-
-        if (pressedKeys.current.has('ArrowRight')) {
-          nextX += speed;
-        }
-
-        if (pressedKeys.current.has('ArrowUp')) {
-          nextY -= speed;
-        }
-
-        if (pressedKeys.current.has('ArrowDown')) {
-          nextY += speed;
-        }
+        if (pressedKeys.current.has('ArrowLeft')) nextX -= speed;
+        if (pressedKeys.current.has('ArrowRight')) nextX += speed;
+        if (pressedKeys.current.has('ArrowUp')) nextY -= speed;
+        if (pressedKeys.current.has('ArrowDown')) nextY += speed;
 
         return {
           x: Math.min(1, Math.max(-1, nextX)),
-          y: Math.min(0.65, Math.max(-1, nextY)),
+          y: Math.min(0.8, Math.max(-1.8, nextY)),
         };
       });
 
@@ -115,23 +109,15 @@ export function RoomScene({ difficultyName, batteryDrainSeconds }: RoomSceneProp
     }
 
     moveFrame.current = window.requestAnimationFrame(moveView);
-
     return () => {
-      if (moveFrame.current) {
-        window.cancelAnimationFrame(moveFrame.current);
-      }
+      if (moveFrame.current) window.cancelAnimationFrame(moveFrame.current);
     };
   }, []);
 
   useEffect(() => {
     return () => {
-      if (toggleTimer.current) {
-        window.clearTimeout(toggleTimer.current);
-      }
-
-      if (moveFrame.current) {
-        window.cancelAnimationFrame(moveFrame.current);
-      }
+      if (toggleTimer.current) window.clearTimeout(toggleTimer.current);
+      if (grandmaTimeout.current) window.clearTimeout(grandmaTimeout.current);
     };
   }, []);
 
@@ -141,41 +127,7 @@ export function RoomScene({ difficultyName, batteryDrainSeconds }: RoomSceneProp
   }, []);
 
   useEffect(() => {
-    function playWaterDrop() {
-      const audioWindow = window as AudioWindow;
-      const AudioContextClass = audioWindow.AudioContext || audioWindow.webkitAudioContext;
-
-      if (!AudioContextClass) {
-        return;
-      }
-
-      audioContext.current ??= new AudioContextClass();
-
-      const context = audioContext.current;
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
-
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(720, context.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(180, context.currentTime + 0.12);
-      gain.gain.setValueAtTime(0.0001, context.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.08, context.currentTime + 0.015);
-      gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.24);
-
-      oscillator.connect(gain);
-      gain.connect(context.destination);
-      oscillator.start();
-      oscillator.stop(context.currentTime + 0.25);
-    }
-
-    const dropTimer = window.setInterval(playWaterDrop, 2400);
-    return () => window.clearInterval(dropTimer);
-  }, []);
-
-  useEffect(() => {
-    if (!isFlashlightOn || battery <= 0) {
-      return;
-    }
+    if (!isFlashlightOn || battery <= 0) return;
 
     const batteryTimer = window.setInterval(() => {
       setBattery((current) => Math.max(0, current - 1));
@@ -185,10 +137,59 @@ export function RoomScene({ difficultyName, batteryDrainSeconds }: RoomSceneProp
   }, [battery, batteryDrainSeconds, isFlashlightOn]);
 
   useEffect(() => {
-    if (battery === 0) {
-      setIsFlashlightOn(false);
-    }
+    if (battery === 0) setIsFlashlightOn(false);
   }, [battery]);
+
+  useEffect(() => {
+    if (!isFlashlightOn || isCorridorOpen || battery >= 30 || battery <= 0) {
+      setIsFlashlightFlickering(false);
+      return;
+    }
+
+    const flickerTimer = window.setInterval(() => {
+      setIsFlashlightFlickering(true);
+      window.setTimeout(() => setIsFlashlightFlickering(false), 500);
+    }, 5000);
+
+    return () => window.clearInterval(flickerTimer);
+  }, [battery, isCorridorOpen, isFlashlightOn]);
+
+  useEffect(() => {
+    if (isCorridorOpen || isGrandmaVisible) return;
+
+    const visitTimer = window.setTimeout(() => {
+      setIsGrandmaVisible(true);
+      setGrandmaRepelProgress(0);
+      grandmaTimeout.current = window.setTimeout(() => {
+        setIsGrandmaVisible(false);
+        setGrandmaRepelProgress(0);
+      }, 5000);
+    }, 9000 + Math.random() * 9000);
+
+    return () => window.clearTimeout(visitTimer);
+  }, [isCorridorOpen, isGrandmaVisible]);
+
+  useEffect(() => {
+    if (!isGrandmaVisible) return;
+
+    const repelTimer = window.setInterval(() => {
+      const isLookingAtWindow = view.x > 0.35;
+      if (!isFlashlightOn || isCorridorOpen || !isLookingAtWindow) return;
+
+      setGrandmaRepelProgress((current) => {
+        const next = current + 0.1;
+        if (next >= 1) {
+          if (grandmaTimeout.current) window.clearTimeout(grandmaTimeout.current);
+          setIsGrandmaVisible(false);
+          return 0;
+        }
+
+        return next;
+      });
+    }, 100);
+
+    return () => window.clearInterval(repelTimer);
+  }, [isCorridorOpen, isFlashlightOn, isGrandmaVisible, view.x]);
 
   function handleMouseMove(event: MouseEvent<HTMLElement>) {
     const bounds = event.currentTarget.getBoundingClientRect();
@@ -213,28 +214,55 @@ export function RoomScene({ difficultyName, batteryDrainSeconds }: RoomSceneProp
       onMouseMove={handleMouseMove}
       aria-label="Первая ночь"
     >
-      <div className="room-ceiling" aria-hidden="true" />
       <div className="room-panorama">
         <img className="room-image" src={scaryRoom} alt="" aria-hidden="true" />
-        <div className="room-floor" aria-hidden="true" />
         <div className="room-bed" aria-hidden="true" />
         <div className="room-pipe" aria-hidden="true">
           <span className="water-drop water-drop-one" />
           <span className="water-drop water-drop-two" />
         </div>
+        <button
+          className="door-hotspot"
+          type="button"
+          onClick={() => {
+            setIsApproachingCorridor(true);
+            window.setTimeout(() => {
+              setIsCorridorOpen(true);
+              setIsApproachingCorridor(false);
+            }, 850);
+          }}
+          onMouseEnter={() => setIsDoorHovered(true)}
+          onMouseLeave={() => setIsDoorHovered(false)}
+          aria-label="Заглянуть в коридор"
+        />
         <div className="room-window" aria-hidden="true">
+          {isGrandmaVisible && <img className="grandma-visitor" src={scaryGrandma} alt="" aria-hidden="true" />}
           <span />
           <span />
         </div>
       </div>
+      {isApproachingCorridor && <div className="approach-door" aria-hidden="true" />}
+      {isCorridorOpen && (
+        <div className={isCorridorLightOn ? 'corridor-view corridor-view-lit' : 'corridor-view'}>
+          <img src={scaryCorridor} alt="" aria-hidden="true" />
+        </div>
+      )}
       <div
-        className={battery < 30 ? 'flashlight flashlight-on flashlight-low' : 'flashlight flashlight-on'}
+        className={isFlashlightFlickering ? 'flashlight flashlight-on flashlight-flicker' : 'flashlight flashlight-on'}
         aria-hidden="true"
-        hidden={!isFlashlightOn}
+        hidden={!isFlashlightOn || isCorridorOpen}
       />
       {isNightTitleVisible && <h1>Первая ночь началась.</h1>}
+      {isDoorHovered && !isCorridorOpen && <p className="door-prompt">Нажмите E, чтобы заглянуть</p>}
+      {isGrandmaVisible && !isCorridorOpen && (
+        <div className="grandma-warning">
+          <span>Свети в окно!</span>
+          <b style={{ width: `${grandmaRepelProgress * 100}%` }} />
+        </div>
+      )}
       <div className="room-hud">
-        <span>Фонарик: {isFlashlightOn ? 'Вкл' : 'Выкл'} {canToggleFlashlight ? '' : '(пауза)'}</span>
+        <span>Фонарик: {isFlashlightOn ? 'Вкл' : 'Выкл'}</span>
+        {isCorridorOpen && <span>Свет в коридоре: {isCorridorLightOn ? 'Вкл' : 'Выкл'}</span>}
         <span>Батарея: {battery}%</span>
         <span>Сложность: {difficultyName}</span>
       </div>

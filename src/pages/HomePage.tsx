@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { RoomScene } from '../components/RoomScene';
 import bloodyHand from '../assets/bloody-hand.jpg';
 import scaryEyes from '../assets/scary-eyes.jpg';
-
-export type DifficultyName = 'Легко' | 'Средний' | 'Сложный' | 'Кошмар';
+import { RoomScene } from '../components/RoomScene';
 
 type Difficulty = {
-  name: DifficultyName;
+  name: 'Легко' | 'Средний' | 'Сложный' | 'Кошмар';
   tagline: string;
   stats: string[];
   batteryDrainSeconds: number;
@@ -42,31 +40,29 @@ const difficulties: Difficulty[] = [
 type Screen = 'menu' | 'story' | 'eyes' | 'room';
 
 export function HomePage() {
+  const [screen, setScreen] = useState<Screen>('menu');
   const [isDifficultyOpen, setIsDifficultyOpen] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>(difficulties[1]);
   const [hoveredDifficulty, setHoveredDifficulty] = useState<Difficulty>(difficulties[1]);
-  const [screen, setScreen] = useState<Screen>('menu');
   const timers = useRef<number[]>([]);
 
   useEffect(() => {
-    return () => {
-      timers.current.forEach((timer) => window.clearTimeout(timer));
-    };
+    return () => timers.current.forEach((timer) => window.clearTimeout(timer));
   }, []);
 
   function startIntro() {
-    setScreen('story');
     timers.current.forEach((timer) => window.clearTimeout(timer));
+    setScreen('story');
     timers.current = [
       window.setTimeout(() => setScreen('eyes'), 6200),
       window.setTimeout(() => setScreen('room'), 6300),
     ];
   }
 
-  function enterRoom() {
+  function startRoom() {
     timers.current.forEach((timer) => window.clearTimeout(timer));
-    timers.current = [window.setTimeout(() => setScreen('room'), 100)];
     setScreen('eyes');
+    timers.current = [window.setTimeout(() => setScreen('room'), 100)];
   }
 
   return (
@@ -81,11 +77,7 @@ export function HomePage() {
               <button className="horror-button horror-button-primary" type="button" onClick={startIntro}>
                 Играть
               </button>
-              <button
-                className="horror-button"
-                type="button"
-                onClick={() => setIsDifficultyOpen((current) => !current)}
-              >
+              <button className="horror-button" type="button" onClick={() => setIsDifficultyOpen((current) => !current)}>
                 Выбрать сложность
               </button>
             </div>
@@ -130,15 +122,15 @@ export function HomePage() {
             светом впереди оказалась вывеска старого мотеля.
           </p>
           <p>
-            Ты снял комнату у домохозяйки-бабушки. Она улыбалась слишком долго, говорила слишком
-            тихо и почему-то знала твое имя до того, как ты его назвал.
+            Ты снял комнату у домохозяйки-бабушки. Она улыбалась слишком долго, говорила слишком тихо
+            и почему-то знала твое имя до того, как ты его назвал.
           </p>
           <p>
             За стенами что-то скребется. Телефон молчит. Дверь будто стала тяжелее. Твоя цель -
             выжить 5 ночей.
           </p>
           <p className="story-difficulty">Сложность: {selectedDifficulty.name}</p>
-          <button className="horror-button horror-button-primary story-start" type="button" onClick={enterRoom}>
+          <button className="horror-button horror-button-primary story-start" type="button" onClick={startRoom}>
             Начать
           </button>
         </section>
@@ -147,7 +139,10 @@ export function HomePage() {
       {screen === 'eyes' && <img className="eyes-flash" src={scaryEyes} alt="" aria-hidden="true" />}
 
       {screen === 'room' && (
-        <RoomScene difficultyName={selectedDifficulty.name} batteryDrainSeconds={selectedDifficulty.batteryDrainSeconds} />
+        <RoomScene
+          difficultyName={selectedDifficulty.name}
+          batteryDrainSeconds={selectedDifficulty.batteryDrainSeconds}
+        />
       )}
     </main>
   );
