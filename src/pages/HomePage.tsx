@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import type { Session } from '@supabase/supabase-js';
 import bloodyHand from '../assets/bloody-hand.jpg';
 import scaryEyes from '../assets/scary-eyes.jpg';
 import { RoomScene } from '../components/RoomScene';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 type Difficulty = {
   name: 'Легко' | 'Средний' | 'Сложный' | 'Кошмар';
@@ -47,12 +49,28 @@ type Screen = 'menu' | 'story' | 'eyes' | 'room';
 export function HomePage() {
   const [screen, setScreen] = useState<Screen>('menu');
   const [isDifficultyOpen, setIsDifficultyOpen] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [loginMessage, setLoginMessage] = useState('');
+  const [session, setSession] = useState<Session | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>(difficulties[1]);
   const [hoveredDifficulty, setHoveredDifficulty] = useState<Difficulty>(difficulties[1]);
   const timers = useRef<number[]>([]);
 
   useEffect(() => {
     return () => timers.current.forEach((timer) => window.clearTimeout(timer));
+  }, []);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+      if (nextSession) setIsGuest(false);
+    });
+
+    return () => data.subscription.unsubscribe();
   }, []);
 
   function startIntro() {
@@ -70,6 +88,40 @@ export function HomePage() {
     timers.current = [window.setTimeout(() => setScreen('room'), 100)];
   }
 
+  async function signInWithGoogle() {
+    setLoginMessage('');
+
+    if (!isSupabaseConfigured) {
+      setLoginMessage('Supabase не настроен. Пока можно играть как гость.');
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    });
+
+    if (error) setLoginMessage(error.message);
+  }
+
+  async function signOut() {
+    setLoginMessage('');
+
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        setLoginMessage(error.message);
+        return;
+      }
+    }
+
+    setSession(null);
+    setIsGuest(false);
+    setIsDifficultyOpen(false);
+  }
+
+  const canPlay = Boolean(session) || isGuest;
+
   return (
     <main className={`horror-screen horror-screen-${screen}`}>
       {screen === 'menu' && (
@@ -79,15 +131,50 @@ export function HomePage() {
           <section className="horror-menu" aria-label="Главное меню">
             <h1 className="blood-title">Motel Horror</h1>
             <div className="menu-actions">
+              {canPlay && (
+                <>
               <button className="horror-button horror-button-primary" type="button" onClick={startIntro}>
                 Играть
               </button>
               <button className="horror-button" type="button" onClick={() => setIsDifficultyOpen((current) => !current)}>
                 Выбрать сложность
               </button>
+                </>
+              )}
+              <button className="horror-button" type="button" onClick={() => setIsLoginOpen((current) => !current)}>
+                Войти
+              </button>
             </div>
 
-            {isDifficultyOpen && (
+            {isLoginOpen && (
+              <div className="login-panel" aria-label="Вход">
+                {session?.user.email && <p className="login-status">Вы вошли как {session.user.email}</p>}
+                {isGuest && <p className="login-status">Вы играете как гость</p>}
+                {session && (
+                  <button className="login-button" type="button" onClick={signOut}>
+                    Выйти из аккаунта
+                  </button>
+                )}
+                <button className="login-button login-button-google" type="button" onClick={signInWithGoogle} hidden={Boolean(session)}>
+                  Войти через Google
+                </button>
+                <button
+                  className="login-button"
+                  type="button"
+                  hidden={Boolean(session)}
+                  onClick={() => {
+                    setLoginMessage('');
+                    setIsGuest(true);
+                    setIsLoginOpen(false);
+                  }}
+                >
+                  Играть как гость
+                </button>
+                {loginMessage && <p>{loginMessage}</p>}
+              </div>
+            )}
+
+            {canPlay && isDifficultyOpen && (
               <div className="difficulty-layout" aria-label="Выбор сложности">
                 <div className="difficulty-menu">
                   {difficulties.map((difficulty) => (

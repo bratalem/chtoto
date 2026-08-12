@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, MouseEvent } from 'react';
 import scaryCorridor from '../assets/scary-corridor.jpg';
 import gameOverGrandma from '../assets/game-over-grandma.jpg';
+import heldCross from '../assets/held-cross.jpg';
+import knockOnWindow from '../assets/knock-on-the-window.mp3';
 import scaryRoom from '../assets/scary-room.jpg';
 
 type Position = {
@@ -9,7 +11,7 @@ type Position = {
   y: number;
 };
 
-type GrandmaPeekSide = 'left' | 'right' | 'bottom' | 'top';
+type HeldItem = 'flashlight' | 'cross';
 
 type RoomSceneProps = {
   difficultyName: string;
@@ -18,8 +20,8 @@ type RoomSceneProps = {
   onBackToMenu: () => void;
 };
 
-const grandmaPeekSides: GrandmaPeekSide[] = ['left', 'right', 'bottom', 'top'];
-const spawnTicksPerSecond = 20;
+const minGrandmaSpawnDelayMs = 9000;
+const randomGrandmaSpawnDelayMs = 5000;
 
 export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReactionSeconds, onBackToMenu }: RoomSceneProps) {
   const [view, setView] = useState<Position>({ x: 0, y: 0 });
@@ -28,6 +30,7 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
   const [isApproachingCorridor, setIsApproachingCorridor] = useState(false);
   const [isCorridorLightOn, setIsCorridorLightOn] = useState(false);
   const [isFlashlightOn, setIsFlashlightOn] = useState(true);
+  const [heldItem, setHeldItem] = useState<HeldItem>('flashlight');
   const [canToggleFlashlight, setCanToggleFlashlight] = useState(true);
   const [battery, setBattery] = useState(100);
   const [isGrandmaVisible, setIsGrandmaVisible] = useState(false);
@@ -36,13 +39,13 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
   const [isFlashlightFlickering, setIsFlashlightFlickering] = useState(false);
   const [isNightTitleVisible, setIsNightTitleVisible] = useState(true);
   const [isGameOver, setIsGameOver] = useState(false);
-  const [grandmaPeekSide, setGrandmaPeekSide] = useState<GrandmaPeekSide>('bottom');
   const [isAimingAtGrandma, setIsAimingAtGrandma] = useState(false);
   const pressedKeys = useRef<Set<string>>(new Set());
   const moveFrame = useRef<number | null>(null);
   const toggleTimer = useRef<number | null>(null);
   const mousePosition = useRef<Position>({ x: -1, y: -1 });
   const roomWindow = useRef<HTMLDivElement | null>(null);
+  const knockSound = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -62,6 +65,18 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
           setIsCorridorOpen(true);
           setIsApproachingCorridor(false);
         }, 850);
+      }
+
+      if (event.code === 'Digit1') {
+        if (isGameOver) return;
+        event.preventDefault();
+        setHeldItem('flashlight');
+      }
+
+      if (event.code === 'Digit2') {
+        if (isGameOver) return;
+        event.preventDefault();
+        setHeldItem('cross');
       }
 
       if (event.code === 'KeyF' && battery > 0) {
@@ -132,7 +147,13 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
   useEffect(() => {
     return () => {
       if (toggleTimer.current) window.clearTimeout(toggleTimer.current);
+      knockSound.current?.pause();
     };
+  }, []);
+
+  useEffect(() => {
+    knockSound.current = new Audio(knockOnWindow);
+    knockSound.current.volume = 0.9;
   }, []);
 
   useEffect(() => {
@@ -141,7 +162,7 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
   }, []);
 
   useEffect(() => {
-    if (isGameOver || !isFlashlightOn || battery <= 0) return;
+    if (isGameOver || heldItem !== 'flashlight' || !isFlashlightOn || battery <= 0) return;
 
     let lastTick = performance.now();
     const batteryTimer = window.setInterval(() => {
@@ -153,14 +174,14 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
     }, 100);
 
     return () => window.clearInterval(batteryTimer);
-  }, [batteryDrainSeconds, isFlashlightOn, isGameOver]);
+  }, [batteryDrainSeconds, heldItem, isFlashlightOn, isGameOver]);
 
   useEffect(() => {
     if (battery === 0) setIsFlashlightOn(false);
   }, [battery]);
 
   useEffect(() => {
-    if (isGameOver || !isFlashlightOn || isCorridorOpen || battery >= 30 || battery <= 0) {
+    if (isGameOver || heldItem !== 'flashlight' || !isFlashlightOn || isCorridorOpen || battery >= 30 || battery <= 0) {
       setIsFlashlightFlickering(false);
       return;
     }
@@ -171,26 +192,31 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
     }, 5000);
 
     return () => window.clearInterval(flickerTimer);
-  }, [battery, isCorridorOpen, isFlashlightOn, isGameOver]);
+  }, [battery, heldItem, isCorridorOpen, isFlashlightOn, isGameOver]);
 
   useEffect(() => {
-    if (isGameOver || isCorridorOpen || isGrandmaVisible) return;
+    if (isGameOver || isGrandmaVisible) return;
 
     const difficultyStep = Math.max(0, Math.round((4 - batteryDrainSeconds) / 1));
-    const spawnChancePerTick = 0.005 * 1.5 ** difficultyStep;
-    const visitTimer = window.setInterval(() => {
-      if (Math.random() > spawnChancePerTick) return;
+    const difficultyDelayBonus = difficultyStep * 700;
+    const spawnDelay = Math.max(
+      6000,
+      minGrandmaSpawnDelayMs + Math.random() * randomGrandmaSpawnDelayMs - difficultyDelayBonus,
+    );
+    const visitTimer = window.setTimeout(() => {
+      if (knockSound.current) {
+        knockSound.current.currentTime = 0;
+        void knockSound.current.play();
+      }
 
-      const nextSide = grandmaPeekSides[Math.floor(Math.random() * grandmaPeekSides.length)];
       setIsGrandmaVisible(true);
       setGrandmaRepelProgress(0);
       setGrandmaTimeLeft(grandmaReactionSeconds);
-      setGrandmaPeekSide(nextSide);
       setIsAimingAtGrandma(false);
-    }, 1000 / spawnTicksPerSecond);
+    }, spawnDelay);
 
-    return () => window.clearInterval(visitTimer);
-  }, [batteryDrainSeconds, grandmaReactionSeconds, isCorridorOpen, isGameOver, isGrandmaVisible]);
+    return () => window.clearTimeout(visitTimer);
+  }, [batteryDrainSeconds, grandmaReactionSeconds, isGameOver, isGrandmaVisible]);
 
   useEffect(() => {
     if (!isGrandmaVisible || isGameOver) return;
@@ -206,7 +232,7 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
           mousePosition.current.y >= windowBounds.top - hitboxPaddingY &&
           mousePosition.current.y <= windowBounds.bottom + hitboxPaddingY,
       );
-      const isRepellingGrandma = !isCorridorOpen && isFlashlightOn && isAimingAtWindow;
+      const isRepellingGrandma = !isCorridorOpen && heldItem === 'flashlight' && isFlashlightOn && isAimingAtWindow;
 
       setIsAimingAtGrandma(isRepellingGrandma);
 
@@ -238,7 +264,7 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
     }, 100);
 
     return () => window.clearInterval(repelTimer);
-  }, [grandmaReactionSeconds, isCorridorOpen, isFlashlightOn, isGameOver, isGrandmaVisible]);
+  }, [grandmaReactionSeconds, heldItem, isCorridorOpen, isFlashlightOn, isGameOver, isGrandmaVisible]);
 
   function handleMouseMove(event: MouseEvent<HTMLElement>) {
     const bounds = event.currentTarget.getBoundingClientRect();
@@ -257,11 +283,12 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
     '--flash-y': 0,
   } as CSSProperties;
   const isEasyMode = batteryDrainSeconds === 4;
+  const isFlashlightActive = heldItem === 'flashlight' && isFlashlightOn;
   const shouldShowGrandmaWarning = isGrandmaVisible && !isCorridorOpen && (isEasyMode || isAimingAtGrandma || grandmaRepelProgress > 0);
 
   return (
     <section
-      className={isFlashlightOn ? 'room-scene' : 'room-scene room-blackout'}
+      className={isFlashlightActive ? 'room-scene' : 'room-scene room-blackout'}
       style={style}
       onMouseMove={handleMouseMove}
       aria-label="Первая ночь"
@@ -289,7 +316,6 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
           aria-label="Заглянуть в коридор"
         />
         <div className="room-window" ref={roomWindow} aria-hidden="true">
-          {isGrandmaVisible && <div className={`grandma-eyes grandma-eyes-${grandmaPeekSide}`} aria-hidden="true" />}
           <span />
           <span />
         </div>
@@ -303,8 +329,13 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
       <div
         className={isFlashlightFlickering ? 'flashlight flashlight-on flashlight-flicker' : 'flashlight flashlight-on'}
         aria-hidden="true"
-        hidden={!isFlashlightOn || isCorridorOpen}
+        hidden={!isFlashlightActive || isCorridorOpen}
       />
+      {heldItem === 'cross' && (
+        <div className="held-cross" aria-hidden="true">
+          <img src={heldCross} alt="" />
+        </div>
+      )}
       {isNightTitleVisible && <h1>Первая ночь началась.</h1>}
       {isDoorHovered && !isCorridorOpen && <p className="door-prompt">Нажмите E, чтобы заглянуть</p>}
       {shouldShowGrandmaWarning && (
@@ -323,6 +354,7 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
           </button>
         </div>
       )}
+      <div className="item-hint">1 - фонарик / 2 - крест</div>
       <div className="room-hud">
         <span>Фонарик: {isFlashlightOn ? 'Вкл' : 'Выкл'}</span>
         {isCorridorOpen && <span>Свет в коридоре: {isCorridorLightOn ? 'Вкл' : 'Выкл'}</span>}
