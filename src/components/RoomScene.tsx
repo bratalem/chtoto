@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, MouseEvent } from 'react';
 import scaryCorridor from '../assets/scary-corridor.jpg';
-import scaryGrandma from '../assets/scary-grandma.jpg';
+import gameOverGrandma from '../assets/game-over-grandma.jpg';
 import scaryRoom from '../assets/scary-room.jpg';
 
 type Position = {
@@ -9,13 +9,19 @@ type Position = {
   y: number;
 };
 
+type GrandmaPeekSide = 'left' | 'right' | 'bottom' | 'top';
+
 type RoomSceneProps = {
   difficultyName: string;
   batteryDrainSeconds: number;
   grandmaReactionSeconds: number;
+  onBackToMenu: () => void;
 };
 
-export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReactionSeconds }: RoomSceneProps) {
+const grandmaPeekSides: GrandmaPeekSide[] = ['left', 'right', 'bottom', 'top'];
+const spawnTicksPerSecond = 20;
+
+export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReactionSeconds, onBackToMenu }: RoomSceneProps) {
   const [view, setView] = useState<Position>({ x: 0, y: 0 });
   const [isDoorHovered, setIsDoorHovered] = useState(false);
   const [isCorridorOpen, setIsCorridorOpen] = useState(false);
@@ -30,9 +36,13 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
   const [isFlashlightFlickering, setIsFlashlightFlickering] = useState(false);
   const [isNightTitleVisible, setIsNightTitleVisible] = useState(true);
   const [isGameOver, setIsGameOver] = useState(false);
+  const [grandmaPeekSide, setGrandmaPeekSide] = useState<GrandmaPeekSide>('bottom');
+  const [isAimingAtGrandma, setIsAimingAtGrandma] = useState(false);
   const pressedKeys = useRef<Set<string>>(new Set());
   const moveFrame = useRef<number | null>(null);
   const toggleTimer = useRef<number | null>(null);
+  const mousePosition = useRef<Position>({ x: -1, y: -1 });
+  const roomWindow = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -133,12 +143,17 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
   useEffect(() => {
     if (isGameOver || !isFlashlightOn || battery <= 0) return;
 
+    let lastTick = performance.now();
     const batteryTimer = window.setInterval(() => {
-      setBattery((current) => Math.max(0, current - 1));
-    }, batteryDrainSeconds * 1000);
+      const currentTick = performance.now();
+      const elapsed = currentTick - lastTick;
+      lastTick = currentTick;
+
+      setBattery((current) => Math.max(0, current - elapsed / (batteryDrainSeconds * 1000)));
+    }, 100);
 
     return () => window.clearInterval(batteryTimer);
-  }, [battery, batteryDrainSeconds, isFlashlightOn, isGameOver]);
+  }, [batteryDrainSeconds, isFlashlightOn, isGameOver]);
 
   useEffect(() => {
     if (battery === 0) setIsFlashlightOn(false);
@@ -161,27 +176,47 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
   useEffect(() => {
     if (isGameOver || isCorridorOpen || isGrandmaVisible) return;
 
-    const visitTimer = window.setTimeout(() => {
+    const difficultyStep = Math.max(0, Math.round((4 - batteryDrainSeconds) / 1));
+    const spawnChancePerTick = 0.005 * 1.5 ** difficultyStep;
+    const visitTimer = window.setInterval(() => {
+      if (Math.random() > spawnChancePerTick) return;
+
+      const nextSide = grandmaPeekSides[Math.floor(Math.random() * grandmaPeekSides.length)];
       setIsGrandmaVisible(true);
       setGrandmaRepelProgress(0);
       setGrandmaTimeLeft(grandmaReactionSeconds);
-    }, 9000 + Math.random() * 9000);
+      setGrandmaPeekSide(nextSide);
+      setIsAimingAtGrandma(false);
+    }, 1000 / spawnTicksPerSecond);
 
-    return () => window.clearTimeout(visitTimer);
-  }, [grandmaReactionSeconds, isCorridorOpen, isGameOver, isGrandmaVisible]);
+    return () => window.clearInterval(visitTimer);
+  }, [batteryDrainSeconds, grandmaReactionSeconds, isCorridorOpen, isGameOver, isGrandmaVisible]);
 
   useEffect(() => {
     if (!isGrandmaVisible || isGameOver) return;
 
     const repelTimer = window.setInterval(() => {
-      const isLookingAtWindow = view.x > 0.35;
+      const windowBounds = roomWindow.current?.getBoundingClientRect();
+      const hitboxPaddingX = windowBounds ? windowBounds.width * 0.18 : 0;
+      const hitboxPaddingY = windowBounds ? windowBounds.height * 0.18 : 0;
+      const isAimingAtWindow = Boolean(
+        windowBounds &&
+          mousePosition.current.x >= windowBounds.left - hitboxPaddingX &&
+          mousePosition.current.x <= windowBounds.right + hitboxPaddingX &&
+          mousePosition.current.y >= windowBounds.top - hitboxPaddingY &&
+          mousePosition.current.y <= windowBounds.bottom + hitboxPaddingY,
+      );
+      const isRepellingGrandma = !isCorridorOpen && isFlashlightOn && isAimingAtWindow;
 
-      if (isCorridorOpen || !isFlashlightOn || !isLookingAtWindow) {
+      setIsAimingAtGrandma(isRepellingGrandma);
+
+      if (!isRepellingGrandma) {
         setGrandmaTimeLeft((current) => {
           const next = Math.max(0, current - 0.1);
           if (next === 0) {
             setIsGameOver(true);
             setIsGrandmaVisible(false);
+            setIsAimingAtGrandma(false);
           }
 
           return next;
@@ -191,9 +226,10 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
 
       setGrandmaRepelProgress((current) => {
         const next = current + 0.1;
-        if (next >= 1) {
+        if (next >= 0.95) {
           setIsGrandmaVisible(false);
           setGrandmaTimeLeft(grandmaReactionSeconds);
+          setIsAimingAtGrandma(false);
           return 0;
         }
 
@@ -202,12 +238,13 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
     }, 100);
 
     return () => window.clearInterval(repelTimer);
-  }, [grandmaReactionSeconds, isCorridorOpen, isFlashlightOn, isGameOver, isGrandmaVisible, view.x]);
+  }, [grandmaReactionSeconds, isCorridorOpen, isFlashlightOn, isGameOver, isGrandmaVisible]);
 
   function handleMouseMove(event: MouseEvent<HTMLElement>) {
     const bounds = event.currentTarget.getBoundingClientRect();
     const centerX = bounds.left + bounds.width / 2;
     const centerY = bounds.top + bounds.height / 2;
+    mousePosition.current = { x: event.clientX, y: event.clientY };
 
     event.currentTarget.style.setProperty('--flash-x', String(((event.clientX - centerX) / bounds.width) * 2));
     event.currentTarget.style.setProperty('--flash-y', String(((event.clientY - centerY) / bounds.height) * 2));
@@ -219,6 +256,8 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
     '--flash-x': 0,
     '--flash-y': 0,
   } as CSSProperties;
+  const isEasyMode = batteryDrainSeconds === 4;
+  const shouldShowGrandmaWarning = isGrandmaVisible && !isCorridorOpen && (isEasyMode || isAimingAtGrandma || grandmaRepelProgress > 0);
 
   return (
     <section
@@ -249,8 +288,8 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
           onMouseLeave={() => setIsDoorHovered(false)}
           aria-label="Заглянуть в коридор"
         />
-        <div className="room-window" aria-hidden="true">
-          {isGrandmaVisible && <img className="grandma-visitor" src={scaryGrandma} alt="" aria-hidden="true" />}
+        <div className="room-window" ref={roomWindow} aria-hidden="true">
+          {isGrandmaVisible && <div className={`grandma-eyes grandma-eyes-${grandmaPeekSide}`} aria-hidden="true" />}
           <span />
           <span />
         </div>
@@ -268,23 +307,26 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
       />
       {isNightTitleVisible && <h1>Первая ночь началась.</h1>}
       {isDoorHovered && !isCorridorOpen && <p className="door-prompt">Нажмите E, чтобы заглянуть</p>}
-      {isGrandmaVisible && !isCorridorOpen && (
-        <div className="grandma-warning">
+      {shouldShowGrandmaWarning && (
+        <div className={isEasyMode ? 'grandma-warning' : 'grandma-warning grandma-warning-progress'}>
           <span>Свети в окно!</span>
-          <em>{grandmaTimeLeft.toFixed(1)}s</em>
+          {isEasyMode && <em>{grandmaTimeLeft.toFixed(1)}s</em>}
           <b style={{ width: `${grandmaRepelProgress * 100}%` }} />
         </div>
       )}
       {isGameOver && (
         <div className="grandma-screamer" role="alert">
-          <img src={scaryGrandma} alt="" aria-hidden="true" />
+          <img src={gameOverGrandma} alt="" aria-hidden="true" />
           <strong>GAME OVER</strong>
+          <button className="screamer-menu-button" type="button" onClick={onBackToMenu}>
+            Вернутся в меню
+          </button>
         </div>
       )}
       <div className="room-hud">
         <span>Фонарик: {isFlashlightOn ? 'Вкл' : 'Выкл'}</span>
         {isCorridorOpen && <span>Свет в коридоре: {isCorridorLightOn ? 'Вкл' : 'Выкл'}</span>}
-        <span>Батарея: {battery}%</span>
+        <span>Батарея: {Math.ceil(battery)}%</span>
         <span>Сложность: {difficultyName}</span>
       </div>
     </section>

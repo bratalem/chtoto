@@ -148,6 +148,7 @@ export function HomePage() {
           difficultyName={selectedDifficulty.name}
           batteryDrainSeconds={selectedDifficulty.batteryDrainSeconds}
           grandmaReactionSeconds={selectedDifficulty.grandmaReactionSeconds}
+          onBackToMenu={() => setScreen('menu')}
         />
       )}
     </main>
