@@ -1250,6 +1250,78 @@ input {
   box-shadow: 0 0 14px rgba(192, 21, 33, 0.56);
 }
 
+.stalker-minigame i {
+  position: absolute;
+  left: 50%;
+  top: 112px;
+  height: 6px;
+  max-width: 92px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ffdddd, #ff3a46);
+  box-shadow: 0 0 12px rgba(255, 58, 70, 0.48);
+  transform: translateX(-50%);
+}
+
+.stalker-warning {
+  position: absolute;
+  left: 50%;
+  top: 16%;
+  z-index: 8;
+  display: grid;
+  width: min(82vw, 240px);
+  gap: 10px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(255, 231, 225, 0.22);
+  border-radius: 6px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.76);
+  color: #ffdddd;
+  font-size: 18px;
+  font-weight: 1000;
+  text-align: center;
+  text-shadow: 0 2px 8px #000;
+}
+
+.stalker-warning::after {
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  content: '';
+}
+
+.stalker-warning b {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ffdddd, #c01521);
+  box-shadow: 0 0 14px rgba(192, 21, 33, 0.56);
+}
+
+.stalker-screamer {
+  position: absolute;
+  inset: 0;
+  z-index: 19;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.42);
+  pointer-events: none;
+}
+
+.stalker-screamer img {
+  width: min(70vw, 520px);
+  height: min(70vh, 520px);
+  object-fit: contain;
+  filter:
+    brightness(0.82)
+    contrast(1.65)
+    drop-shadow(0 0 34px rgba(0, 0, 0, 0.92));
+  animation: stalkerCameraRush 300ms cubic-bezier(0.12, 0.84, 0.22, 1) forwards;
+}
+
 .room-hud {
   position: absolute;
   left: 18px;
@@ -1676,6 +1748,23 @@ input {
   100% {
     opacity: 0;
     transform: translateY(82vh) scale(0.72);
+  }
+}
+
+@keyframes stalkerCameraRush {
+  0% {
+    opacity: 0;
+    transform: translateY(-18vh) scale(0.16);
+  }
+
+  48% {
+    opacity: 1;
+    transform: translateY(0) scale(2.9);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(14vh) scale(7);
   }
 }
 
