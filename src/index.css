@@ -1048,7 +1048,7 @@ input {
   inset: 0;
   background:
     radial-gradient(
-      circle at calc(50% + var(--flash-x) * 22%) calc(50% + var(--flash-y) * 18%),
+      circle at calc(50% + var(--flash-x) * 50%) calc(50% + var(--flash-y) * 50%),
       rgba(255, 238, 190, 0.42) 0 7%,
       rgba(255, 225, 154, 0.14) 15%,
       rgba(0, 0, 0, 0.32) 28%,
@@ -1338,6 +1338,28 @@ input {
   100% {
     opacity: 1;
     transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+@keyframes screamerHit {
+  0% {
+    opacity: 0;
+    filter: brightness(2.2);
+  }
+
+  100% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+
+@keyframes screamerZoom {
+  0% {
+    transform: scale(0.78);
+  }
+
+  100% {
+    transform: scale(1.18);
   }
 }
 
@@ -1948,6 +1970,44 @@ input {
   border-radius: 999px;
   background: linear-gradient(90deg, #fff1b8, #ffcf4d);
   box-shadow: 0 0 14px rgba(255, 226, 120, 0.45);
+}
+
+.grandma-warning em {
+  color: #ff7777;
+  font-style: normal;
+  letter-spacing: 0;
+}
+
+.grandma-screamer {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #000;
+  animation: screamerHit 650ms steps(2, end) forwards;
+}
+
+.grandma-screamer img {
+  width: 112vw;
+  height: 112vh;
+  object-fit: cover;
+  filter: contrast(1.55) saturate(0.4) brightness(0.95);
+  animation: screamerZoom 650ms ease-out forwards;
+}
+
+.grandma-screamer strong {
+  position: absolute;
+  left: 50%;
+  bottom: 8vh;
+  transform: translateX(-50%);
+  color: #e70816;
+  font-size: clamp(42px, 10vw, 110px);
+  line-height: 0.9;
+  text-shadow:
+    0 0 18px rgba(231, 8, 22, 0.85),
+    0 4px 0 #170002;
 }
 
 .motel-hud span,

@@ -8,6 +8,7 @@ type Difficulty = {
   tagline: string;
   stats: string[];
   batteryDrainSeconds: number;
+  grandmaReactionSeconds: number;
 };
 
 const difficulties: Difficulty[] = [
@@ -16,24 +17,28 @@ const difficulties: Difficulty[] = [
     tagline: 'Монстры приходят редко, есть больше времени на реакцию.',
     stats: ['Фонарик: -1% каждые 4 секунды', 'Опасность: низкая', 'Время на отпугивание: длинное'],
     batteryDrainSeconds: 4,
+    grandmaReactionSeconds: 5,
   },
   {
     name: 'Средний',
     tagline: 'Для сбалансированного опыта.',
     stats: ['Фонарик: -1% каждые 3 секунды', 'Опасность: обычная', 'Время на отпугивание: среднее'],
     batteryDrainSeconds: 3,
+    grandmaReactionSeconds: 3.5,
   },
   {
     name: 'Сложный',
     tagline: 'Монстры появляются чаще, а батарейку придется беречь.',
     stats: ['Фонарик: -1% каждые 2 секунды', 'Опасность: высокая', 'Время на отпугивание: короткое'],
     batteryDrainSeconds: 2,
+    grandmaReactionSeconds: 2,
   },
   {
     name: 'Кошмар',
     tagline: 'Для самых смелых.',
     stats: ['Фонарик: -1% каждую секунду', 'Монстры приходят очень часто', 'Время на отпугивание: очень короткое'],
     batteryDrainSeconds: 1,
+    grandmaReactionSeconds: 1.5,
   },
 ];
 
@@ -142,6 +147,7 @@ export function HomePage() {
         <RoomScene
           difficultyName={selectedDifficulty.name}
           batteryDrainSeconds={selectedDifficulty.batteryDrainSeconds}
+          grandmaReactionSeconds={selectedDifficulty.grandmaReactionSeconds}
         />
       )}
     </main>
