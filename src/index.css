@@ -736,6 +736,14 @@ input {
   animation: storyAppear 5.8s ease forwards;
 }
 
+.sound-warning-panel {
+  text-align: center;
+}
+
+.sound-warning-panel p {
+  margin-bottom: 24px;
+}
+
 .story-panel h1 {
   margin-bottom: 26px;
   font-size: clamp(42px, 8vw, 74px);
@@ -1118,10 +1126,128 @@ input {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  mix-blend-mode: multiply;
   filter: brightness(0.86) contrast(1.22) saturate(0.78);
-  -webkit-mask-image: radial-gradient(ellipse at 50% 50%, #000 0 58%, rgba(0, 0, 0, 0.72) 68%, transparent 78%);
-  mask-image: radial-gradient(ellipse at 50% 50%, #000 0 58%, rgba(0, 0, 0, 0.72) 68%, transparent 78%);
+}
+
+.ceiling-stalker {
+  position: absolute;
+  left: 54%;
+  top: 1%;
+  z-index: 2;
+  width: 31%;
+  height: 34%;
+  transform: translateX(-50%) rotate(180deg) perspective(700px) rotateX(58deg);
+  transform-origin: center top;
+  pointer-events: none;
+  animation: stalkerCeilingAppear 700ms ease-out forwards;
+}
+
+.ceiling-stalker img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter:
+    brightness(0.56)
+    contrast(1.55)
+    saturate(0.6)
+    drop-shadow(0 22px 24px rgba(0, 0, 0, 0.92));
+}
+
+.blood-drips {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  pointer-events: none;
+}
+
+.blood-drips span {
+  position: absolute;
+  top: 9vh;
+  width: clamp(8px, 1.2vw, 14px);
+  height: clamp(14px, 2vw, 22px);
+  border-radius: 60% 60% 70% 70%;
+  background: radial-gradient(circle at 45% 32%, #d31422, #7c0008 62%, #250002 100%);
+  filter: drop-shadow(0 0 10px rgba(151, 0, 10, 0.72));
+  animation: bloodDropFall 3400ms ease-in infinite;
+}
+
+.blood-drips span:nth-child(1) {
+  left: 43%;
+  animation-delay: 120ms;
+}
+
+.blood-drips span:nth-child(2) {
+  left: 50%;
+  animation-delay: 900ms;
+}
+
+.blood-drips span:nth-child(3) {
+  left: 58%;
+  animation-delay: 1680ms;
+}
+
+.blood-drips span:nth-child(4) {
+  left: 48%;
+  animation-delay: 2380ms;
+}
+
+.blood-drips span:nth-child(5) {
+  left: 55%;
+  animation-delay: 2920ms;
+}
+
+.stalker-minigame {
+  position: absolute;
+  left: 50%;
+  top: 14%;
+  z-index: 8;
+  display: grid;
+  width: min(82vw, 260px);
+  gap: 10px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(255, 231, 225, 0.22);
+  border-radius: 6px;
+  padding: 12px 12px 18px;
+  background: rgba(0, 0, 0, 0.76);
+  color: #fff6ef;
+  text-align: center;
+  text-shadow: 0 2px 8px #000;
+}
+
+.stalker-minigame strong {
+  display: grid;
+  width: 92px;
+  height: 92px;
+  place-items: center;
+  justify-self: center;
+  border: 3px solid rgba(255, 231, 225, 0.78);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #210306, #780711);
+  color: #ffdddd;
+  font-size: 48px;
+  font-weight: 1000;
+  line-height: 1;
+  box-shadow:
+    inset 0 0 18px rgba(255, 255, 255, 0.08),
+    0 0 18px rgba(192, 21, 33, 0.42);
+}
+
+.stalker-minigame::after {
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  content: '';
+}
+
+.stalker-minigame b {
+  position: absolute;
+  left: 12px;
+  bottom: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ffefc7, #c01521);
+  box-shadow: 0 0 14px rgba(192, 21, 33, 0.56);
 }
 
 .room-hud {
@@ -1157,6 +1283,27 @@ input {
   font-size: 14px;
   font-weight: 900;
   text-shadow: 0 2px 8px #000;
+}
+
+.night-complete {
+  position: absolute;
+  inset: 0;
+  z-index: 18;
+  display: grid;
+  place-content: center;
+  gap: 22px;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.78);
+  text-align: center;
+}
+
+.night-complete h2 {
+  color: #fff6ef;
+  font-size: clamp(38px, 8vw, 84px);
+  line-height: 1;
+  text-shadow:
+    0 0 18px rgba(192, 21, 33, 0.48),
+    0 7px 0 rgba(65, 0, 4, 0.8);
 }
 
 .room-message {
@@ -1477,6 +1624,58 @@ input {
     transform: translate(-50%, 0);
     pointer-events: auto;
     visibility: visible;
+  }
+}
+
+@keyframes stalkerDrop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -18%) rotate(180deg) scale(0.92);
+  }
+
+  18%,
+  76% {
+    opacity: 1;
+    transform: translate(-50%, 0) rotate(180deg) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -10%) rotate(180deg) scale(0.98);
+  }
+}
+
+@keyframes stalkerCeilingAppear {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) rotate(180deg) perspective(700px) rotateX(58deg) scale(0.96);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) rotate(180deg) perspective(700px) rotateX(58deg) scale(1);
+  }
+}
+
+@keyframes bloodDropFall {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.45);
+  }
+
+  12% {
+    opacity: 1;
+    transform: translateY(3vh) scale(1);
+  }
+
+  72% {
+    opacity: 0.92;
+    transform: translateY(48vh) scale(0.92);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(82vh) scale(0.72);
   }
 }
 

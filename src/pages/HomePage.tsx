@@ -44,7 +44,7 @@ const difficulties: Difficulty[] = [
   },
 ];
 
-type Screen = 'menu' | 'story' | 'eyes' | 'room';
+type Screen = 'menu' | 'soundWarning' | 'story' | 'eyes' | 'room';
 
 export function HomePage() {
   const [screen, setScreen] = useState<Screen>('menu');
@@ -74,6 +74,11 @@ export function HomePage() {
   }, []);
 
   function startIntro() {
+    timers.current.forEach((timer) => window.clearTimeout(timer));
+    setScreen('soundWarning');
+  }
+
+  function continueAfterSoundWarning() {
     timers.current.forEach((timer) => window.clearTimeout(timer));
     setScreen('story');
     timers.current = [
@@ -204,6 +209,18 @@ export function HomePage() {
             )}
           </section>
         </>
+      )}
+
+      {screen === 'soundWarning' && (
+        <section className="story-panel sound-warning-panel" aria-label="Предупреждение">
+          <h1>Включи звук</h1>
+          <p>
+            Лучше играть со звуком: он обязателен для игрового процесса. Некоторые опасности можно заметить только по звуку.
+          </p>
+          <button className="horror-button horror-button-primary story-start" type="button" onClick={continueAfterSoundWarning}>
+            Продолжить
+          </button>
+        </section>
       )}
 
       {screen === 'story' && (
