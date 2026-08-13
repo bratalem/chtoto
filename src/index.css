@@ -818,10 +818,43 @@ input {
   width: 168vw;
   height: 158vh;
   min-width: 1080px;
+  opacity: 0;
+  pointer-events: none;
   transform:
     translate(-50%, -50%)
     translate(calc(var(--view-x) * -330px), calc(var(--view-y) * -340px));
   transition: transform 160ms ease-out;
+}
+
+.room-world-3d {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  background: #090608;
+}
+
+.room-world-3d canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.corridor-3d-glow {
+  position: absolute;
+  right: 22%;
+  top: 24%;
+  width: 14%;
+  height: 46%;
+  border-radius: 6px;
+  background: rgba(10, 6, 5, 0.22);
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+
+.corridor-3d-glow-lit {
+  background: rgba(248, 221, 160, 0.16);
+  box-shadow: 0 0 42px rgba(248, 221, 160, 0.42);
 }
 
 .room-image {

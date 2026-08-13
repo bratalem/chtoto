@@ -8,6 +8,7 @@ import heldCross from '../assets/held-cross-cutout.png';
 import knockOnWindow from '../assets/knock-on-the-window.mp3';
 import scaryRoom from '../assets/scary-room.jpg';
 import stalkerImpact from '../assets/stalker-impact.mp3';
+import { RoomWorld3D } from './RoomWorld3D';
 
 type Position = {
   x: number;
@@ -29,7 +30,7 @@ const randomGrandmaSpawnDelayMs = 7000;
 const minStalkerSpawnDelayMs = 8000;
 const randomStalkerSpawnDelayMs = 8000;
 const nightDurationSeconds = 5 * 60;
-const stalkerMinigameLength = 6;
+const stalkerMinigameLength = 4;
 const stalkerKeys: StalkerInput[] = ['KeyQ', 'KeyE', 'KeyF', 'KeyR'];
 const stalkerReactionMs = 3000;
 
@@ -39,7 +40,6 @@ function createStalkerSequence() {
 
 export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReactionSeconds, onBackToMenu }: RoomSceneProps) {
   const stalkerMinigameTimeMs = batteryDrainSeconds === 4 ? 6000 : batteryDrainSeconds === 3 ? 5000 : batteryDrainSeconds === 2 ? 4000 : 3000;
-  const [view, setView] = useState<Position>({ x: 0, y: 0 });
   const [isDoorHovered, setIsDoorHovered] = useState(false);
   const [isCorridorOpen, setIsCorridorOpen] = useState(false);
   const [isApproachingCorridor, setIsApproachingCorridor] = useState(false);
@@ -64,8 +64,6 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
   const [stalkerStep, setStalkerStep] = useState(0);
   const [stalkerKeyTimeLeft, setStalkerKeyTimeLeft] = useState(stalkerMinigameTimeMs);
   const [stalkerReactionLeft, setStalkerReactionLeft] = useState(stalkerReactionMs);
-  const pressedKeys = useRef<Set<string>>(new Set());
-  const moveFrame = useRef<number | null>(null);
   const toggleTimer = useRef<number | null>(null);
   const mousePosition = useRef<Position>({ x: -1, y: -1 });
   const roomWindow = useRef<HTMLDivElement | null>(null);
@@ -127,25 +125,10 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
         toggleTimer.current = window.setTimeout(() => setCanToggleFlashlight(true), 700);
       }
 
-      if (event.code.startsWith('Arrow')) {
-        if (isGameOver || isNightComplete) return;
-        event.preventDefault();
-        pressedKeys.current.add(event.code);
-      }
-    }
-
-    function handleKeyUp(event: KeyboardEvent) {
-      if (event.code.startsWith('Arrow')) {
-        pressedKeys.current.delete(event.code);
-      }
     }
 
     window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
     battery,
     canToggleFlashlight,
@@ -157,35 +140,6 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
     stalkerSequence,
     stalkerStep,
   ]);
-
-  useEffect(() => {
-    function moveView() {
-      setView((current) => {
-        if (isGameOver || isNightComplete || pressedKeys.current.size === 0) return current;
-
-        let nextX = current.x;
-        let nextY = current.y;
-        const speed = 0.035;
-
-        if (pressedKeys.current.has('ArrowLeft')) nextX -= speed;
-        if (pressedKeys.current.has('ArrowRight')) nextX += speed;
-        if (pressedKeys.current.has('ArrowUp')) nextY -= speed;
-        if (pressedKeys.current.has('ArrowDown')) nextY += speed;
-
-        return {
-          x: Math.min(1, Math.max(-1, nextX)),
-          y: Math.min(0.8, Math.max(-1.8, nextY)),
-        };
-      });
-
-      moveFrame.current = window.requestAnimationFrame(moveView);
-    }
-
-    moveFrame.current = window.requestAnimationFrame(moveView);
-    return () => {
-      if (moveFrame.current) window.cancelAnimationFrame(moveFrame.current);
-    };
-  }, [isGameOver, isNightComplete, stalkerMinigameTimeMs]);
 
   useEffect(() => {
     return () => {
@@ -479,8 +433,8 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
   const isEasyMode = batteryDrainSeconds === 4;
   const isFlashlightActive = heldItem === 'flashlight' && isFlashlightOn;
   const style = {
-    '--view-x': view.x.toFixed(3),
-    '--view-y': view.y.toFixed(3),
+    '--view-x': 0,
+    '--view-y': 0,
     '--flash-x': 0,
     '--flash-y': 0,
   } as CSSProperties;
@@ -499,6 +453,22 @@ export function RoomScene({ difficultyName, batteryDrainSeconds, grandmaReaction
       onMouseMove={handleMouseMove}
       aria-label="Первая ночь"
     >
+      <RoomWorld3D
+        isStalkerVisible={isStalkerVisible}
+        isCorridorOpen={isCorridorOpen}
+        isCorridorLightOn={isCorridorLightOn}
+        isFlashlightActive={isFlashlightActive}
+        isFlashlightFlickering={isFlashlightFlickering}
+        onDoorHover={setIsDoorHovered}
+        onOpenCorridor={() => {
+          if (isGameOver) return;
+          setIsApproachingCorridor(true);
+          window.setTimeout(() => {
+            setIsCorridorOpen(true);
+            setIsApproachingCorridor(false);
+          }, 850);
+        }}
+      />
       <div className="room-panorama">
         <img className="room-image" src={scaryRoom} alt="" aria-hidden="true" />
         {isStalkerVisible && (
