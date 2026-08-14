@@ -561,6 +561,14 @@ input {
   background: radial-gradient(circle, transparent 28%, rgba(0, 0, 0, 0.78) 100%);
 }
 
+.horror-screen-room {
+  display: block;
+  width: 100vw;
+  height: 100dvh;
+  min-height: 100dvh;
+  padding: 0;
+}
+
 .horror-menu {
   position: relative;
   z-index: 2;
@@ -852,12 +860,18 @@ input {
 }
 
 .room-scene-phone .room-panorama {
-  width: 260vw;
-  height: 122vh;
-  min-width: 1180px;
+  width: max(340vw, 1280px);
+  height: 100dvh;
+  min-width: 1280px;
   transform:
     translate(-50%, -50%)
-    translate(calc(var(--view-x) * -440px), calc(var(--view-y) * -190px));
+    translate(calc(var(--view-x) * -520px), calc(var(--view-y) * -150px));
+}
+
+.room-scene-phone {
+  width: 100vw;
+  height: 100dvh;
+  min-height: 100dvh;
 }
 
 .room-world-3d {

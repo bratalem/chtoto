@@ -73,6 +73,7 @@ export function RoomScene({
   const virtualCamera = useRef({ x: 0, y: 0 });
   const roomWindow = useRef<HTMLDivElement | null>(null);
   const stalker = useRef<HTMLDivElement | null>(null);
+  const hasGrandmaVisited = useRef(false);
   const knockSound = useRef<HTMLAudioElement | null>(null);
   const deathSound = useRef<HTMLAudioElement | null>(null);
   const stalkerImpactSound = useRef<HTMLAudioElement | null>(null);
@@ -367,11 +368,11 @@ export function RoomScene({
 
     const difficultyStep = Math.max(0, Math.round((4 - batteryDrainSeconds) / 1));
     const difficultyDelayBonus = difficultyStep * 500;
-    const spawnDelay = Math.max(
-      6000,
-      minGrandmaSpawnDelayMs + Math.random() * randomGrandmaSpawnDelayMs - difficultyDelayBonus,
-    );
+    const spawnDelay = hasGrandmaVisited.current
+      ? Math.max(6000, minGrandmaSpawnDelayMs + Math.random() * randomGrandmaSpawnDelayMs - difficultyDelayBonus)
+      : 2500;
     const visitTimer = window.setTimeout(() => {
+      hasGrandmaVisited.current = true;
       playGrandmaKnocks();
 
       setIsGrandmaVisible(true);
