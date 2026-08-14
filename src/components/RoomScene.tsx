@@ -489,7 +489,11 @@ export function RoomScene({
 
   return (
     <section
-      className={isFlashlightActive ? 'room-scene' : 'room-scene room-blackout'}
+      className={[
+        'room-scene',
+        showMobileControls ? 'room-scene-phone' : '',
+        isFlashlightActive ? '' : 'room-blackout',
+      ].filter(Boolean).join(' ')}
       style={style}
       onMouseMove={(event) => {
         const bounds = event.currentTarget.getBoundingClientRect();

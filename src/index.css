@@ -851,6 +851,15 @@ input {
   transition: transform 160ms ease-out;
 }
 
+.room-scene-phone .room-panorama {
+  width: 260vw;
+  height: 122vh;
+  min-width: 1180px;
+  transform:
+    translate(-50%, -50%)
+    translate(calc(var(--view-x) * -440px), calc(var(--view-y) * -190px));
+}
+
 .room-world-3d {
   position: absolute;
   inset: 0;
@@ -1864,10 +1873,10 @@ input {
 .mobile-camera-stick {
   position: absolute;
   left: 18px;
-  bottom: 82px;
+  bottom: 42px;
   z-index: 9;
-  width: 112px;
-  height: 112px;
+  width: 104px;
+  height: 104px;
   border-radius: 50%;
   padding: 10px;
   background: rgba(0, 0, 0, 0.78);
@@ -1879,8 +1888,8 @@ input {
   position: absolute;
   inset: auto 0 0;
   z-index: 9;
-  height: 214px;
-  background: linear-gradient(180deg, transparent, #000 42%, #000 100%);
+  height: 154px;
+  background: linear-gradient(180deg, transparent, #000 34%, #000 100%);
   pointer-events: none;
 }
 
@@ -1916,7 +1925,7 @@ input {
 .mobile-item-controls {
   position: absolute;
   right: 18px;
-  bottom: 72px;
+  bottom: 50px;
   z-index: 9;
   display: flex;
   gap: 12px;
@@ -1928,8 +1937,8 @@ input {
 
 .mobile-item-button {
   display: grid;
-  width: 68px;
-  height: 68px;
+  width: 62px;
+  height: 62px;
   place-items: center;
   overflow: hidden;
   border: 2px solid rgba(255, 231, 225, 0.18);
