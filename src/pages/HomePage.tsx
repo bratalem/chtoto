@@ -45,6 +45,7 @@ const difficulties: Difficulty[] = [
 ];
 
 type Screen = 'menu' | 'soundWarning' | 'story' | 'eyes' | 'room';
+type DeviceMode = 'computer' | 'phone';
 
 export function HomePage() {
   const [screen, setScreen] = useState<Screen>('menu');
@@ -55,6 +56,7 @@ export function HomePage() {
   const [isGuest, setIsGuest] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>(difficulties[1]);
   const [hoveredDifficulty, setHoveredDifficulty] = useState<Difficulty>(difficulties[1]);
+  const [deviceMode, setDeviceMode] = useState<DeviceMode>('computer');
   const timers = useRef<number[]>([]);
 
   useEffect(() => {
@@ -147,6 +149,22 @@ export function HomePage() {
               <button className="horror-button" type="button" onClick={() => setIsDifficultyOpen((current) => !current)}>
                 Выбрать сложность
               </button>
+              <div className="device-choice" aria-label="Device choice">
+                <button
+                  className={deviceMode === 'computer' ? 'device-choice-button device-choice-button-active' : 'device-choice-button'}
+                  type="button"
+                  onClick={() => setDeviceMode('computer')}
+                >
+                  Computer
+                </button>
+                <button
+                  className={deviceMode === 'phone' ? 'device-choice-button device-choice-button-active' : 'device-choice-button'}
+                  type="button"
+                  onClick={() => setDeviceMode('phone')}
+                >
+                  Phone
+                </button>
+              </div>
                 </>
               )}
               <button className="horror-button" type="button" onClick={() => setIsLoginOpen((current) => !current)}>
@@ -255,6 +273,7 @@ export function HomePage() {
           difficultyName={selectedDifficulty.name}
           batteryDrainSeconds={selectedDifficulty.batteryDrainSeconds}
           grandmaReactionSeconds={selectedDifficulty.grandmaReactionSeconds}
+          showMobileControls={deviceMode === 'phone'}
           onBackToMenu={() => setScreen('menu')}
         />
       )}

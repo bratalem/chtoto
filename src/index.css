@@ -590,6 +590,33 @@ input {
   gap: 14px;
 }
 
+.device-choice {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  border: 1px solid rgba(255, 231, 225, 0.16);
+  border-radius: 999px;
+  padding: 6px;
+  background: #000;
+}
+
+.device-choice-button {
+  min-height: 46px;
+  border: 1px solid rgba(255, 231, 225, 0.16);
+  border-radius: 999px;
+  background: #050505;
+  color: #d8cdc8;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.device-choice-button-active {
+  border-color: rgba(255, 226, 150, 0.84);
+  background: #15120b;
+  color: #fff2c7;
+  box-shadow: 0 0 18px rgba(255, 226, 150, 0.16);
+}
+
 .difficulty-layout {
   display: grid;
   grid-template-columns: 1fr;
@@ -806,9 +833,7 @@ input {
 
 .room-blackout::before {
   z-index: 3;
-  background:
-    radial-gradient(circle at 50% 48%, rgba(86, 76, 62, 0.16), transparent 34%),
-    rgba(0, 0, 0, 0.84);
+  background: rgba(0, 0, 0, 0.94);
 }
 
 .room-panorama {
@@ -818,7 +843,7 @@ input {
   width: 168vw;
   height: 158vh;
   min-width: 1080px;
-  opacity: 0;
+  opacity: 1;
   pointer-events: none;
   transform:
     translate(-50%, -50%)
@@ -832,6 +857,7 @@ input {
   z-index: 1;
   overflow: hidden;
   background: #090608;
+  cursor: none;
 }
 
 .room-world-3d canvas {
@@ -840,21 +866,430 @@ input {
   height: 100%;
 }
 
-.corridor-3d-glow {
+.motel-2d-world {
   position: absolute;
-  right: 22%;
-  top: 24%;
-  width: 14%;
-  height: 46%;
-  border-radius: 6px;
-  background: rgba(10, 6, 5, 0.22);
-  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.8);
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 58%, rgba(42, 52, 50, 0.34), transparent 34%),
+    linear-gradient(180deg, #061018, #020304 72%);
+}
+
+.motel-2d-asphalt {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 28% 82%, rgba(255, 255, 255, 0.08), transparent 9%),
+    radial-gradient(ellipse at 58% 79%, rgba(255, 255, 255, 0.06), transparent 10%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 2px, transparent 2px 70px),
+    #15191a;
+}
+
+.motel-2d-building,
+.motel-2d-side {
+  position: absolute;
+  border: 2px solid #242628;
+  background:
+    linear-gradient(90deg, rgba(36, 56, 41, 0.42), transparent 18% 72%, rgba(82, 42, 24, 0.48)),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 3px, transparent 3px 28px),
+    #646867;
+  box-shadow: inset 0 0 0 7px rgba(0, 0, 0, 0.18), 0 24px 42px rgba(0, 0, 0, 0.72);
+}
+
+.motel-2d-front {
+  left: 17%;
+  top: 12%;
+  width: 66%;
+  height: 24%;
+}
+
+.motel-2d-side {
+  top: 28%;
+  width: 13%;
+  height: 44%;
+}
+
+.motel-2d-side-left {
+  left: 17%;
+}
+
+.motel-2d-side-right {
+  right: 17%;
+}
+
+.motel-2d-balcony {
+  position: absolute;
+  left: 3%;
+  right: 3%;
+  bottom: 18%;
+  height: 18%;
+  border-top: 3px solid #292c2d;
+  border-bottom: 2px solid rgba(185, 171, 145, 0.45);
+  background: repeating-linear-gradient(90deg, transparent 0 38px, rgba(0, 0, 0, 0.42) 38px 42px);
+}
+
+.motel-2d-balcony::after {
+  position: absolute;
+  inset: -8px 0 auto;
+  height: 8px;
+  background: radial-gradient(circle, rgba(198, 142, 58, 0.62), transparent 55%);
+  animation: motelLampFlicker 3.6s steps(2, end) infinite;
+  content: '';
+}
+
+.motel-2d-door,
+.motel-2d-window {
+  position: absolute;
+  transform: translateX(-50%);
+  background: #1a1d1e;
+}
+
+.motel-2d-door {
+  bottom: 4%;
+  width: 5%;
+  height: 42%;
+  border: 2px solid #2c3435;
+  box-shadow: inset 0 0 0 4px rgba(117, 78, 52, 0.34);
+}
+
+.motel-2d-door::after {
+  position: absolute;
+  left: 14%;
+  top: 18%;
+  width: 64%;
+  height: 18%;
+  background: #a79b82;
+  opacity: 0.35;
+  content: '';
+}
+
+.motel-2d-door-broken {
+  rotate: -8deg;
+  translate: 0 8px;
+  background: #111;
+}
+
+.motel-2d-window {
+  top: 14%;
+  width: 5.8%;
+  height: 22%;
+  border: 2px solid #111;
+}
+
+.motel-2d-window-broken i,
+.motel-2d-window-broken b {
+  position: absolute;
+  background: #8fa5a6;
+  content: '';
+}
+
+.motel-2d-window-broken i {
+  left: 15%;
+  top: 22%;
+  width: 56%;
+  height: 3px;
+  rotate: -25deg;
+}
+
+.motel-2d-window-broken b {
+  right: 16%;
+  bottom: 10%;
+  width: 3px;
+  height: 54%;
+}
+
+.motel-2d-window-boarded,
+.motel-2d-window-boarded i {
+  background:
+    repeating-linear-gradient(35deg, #5d3c23 0 9px, #3f2818 9px 18px),
+    #5d3c23;
+}
+
+.motel-2d-side-door {
+  position: absolute;
+  left: 50%;
+  width: 44%;
+  height: 13%;
+  transform: translate(-50%, -50%);
+  background: #171a1b;
+}
+
+.motel-2d-side-door i {
+  position: absolute;
+  right: 112%;
+  top: 15%;
+  width: 52%;
+  height: 70%;
+}
+
+.motel-2d-pipes {
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  top: 48%;
+  height: 6px;
+  background: #6e3920;
+  box-shadow:
+    120px 12px 0 #6e3920,
+    260px -10px 0 #522817,
+    390px 18px 0 #6e3920;
+}
+
+.motel-2d-pipes::after {
+  position: absolute;
+  left: 63%;
+  top: 5px;
+  width: 24px;
+  height: 38px;
+  border-left: 6px solid #522817;
+  border-bottom: 6px solid #522817;
+  content: '';
+}
+
+.motel-2d-graffiti {
+  position: absolute;
+  right: 6%;
+  top: 40%;
+  color: rgba(110, 12, 18, 0.82);
+  font-size: 18px;
+  font-weight: 1000;
+  rotate: -6deg;
+}
+
+.motel-2d-pool {
+  position: absolute;
+  left: 40%;
+  top: 47%;
+  width: 20%;
+  height: 17%;
+  border: 8px solid #3e4242;
+  background: #101314;
+  box-shadow: 0 0 0 3px #111, inset 0 0 30px #000;
+}
+
+.motel-2d-pool span {
+  position: absolute;
+  inset: 8px;
+  background:
+    radial-gradient(circle at 36% 42%, rgba(91, 121, 94, 0.36), transparent 34%),
+    #1d382f;
+  opacity: 0.86;
+}
+
+.motel-2d-fence {
+  position: absolute;
+  background: repeating-linear-gradient(90deg, #733c22 0 5px, transparent 5px 28px);
+  opacity: 0.86;
+}
+
+.motel-2d-fence-front {
+  left: 37%;
+  top: 43%;
+  width: 26%;
+  height: 8px;
+}
+
+.motel-2d-fence-left,
+.motel-2d-fence-right {
+  top: 45%;
+  width: 8px;
+  height: 22%;
+}
+
+.motel-2d-fence-left {
+  left: 36%;
+}
+
+.motel-2d-fence-right {
+  right: 36%;
+}
+
+.motel-2d-lounger {
+  position: absolute;
+  width: 9%;
+  height: 4%;
+  border: 2px solid #68371f;
+  background: #6f685b;
+}
+
+.motel-2d-lounger-left {
+  left: 29%;
+  top: 56%;
+  rotate: -14deg;
+}
+
+.motel-2d-lounger-right {
+  right: 28%;
+  top: 51%;
+  rotate: 18deg;
+}
+
+.motel-2d-car {
+  position: absolute;
+  width: 13%;
+  height: 7%;
+  transform: translate(-50%, -50%);
+  border-radius: 8px;
+  background: #171717;
+  box-shadow: inset 0 0 0 6px #393027, 0 14px 22px rgba(0, 0, 0, 0.58);
+}
+
+.motel-2d-car span {
+  position: absolute;
+  left: 34%;
+  top: -14%;
+  width: 34%;
+  height: 58%;
+  background: #292825;
+}
+
+.motel-2d-car i,
+.motel-2d-car b {
+  position: absolute;
+  bottom: -9px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #070707;
+}
+
+.motel-2d-car i {
+  left: 12%;
+}
+
+.motel-2d-car b {
+  right: 12%;
+}
+
+.motel-trash,
+.motel-suitcase,
+.motel-branch {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.motel-trash {
+  width: 22px;
+  height: 14px;
+  background: #8e8878;
+}
+
+.motel-trash-wide {
+  width: 38px;
+}
+
+.motel-suitcase {
+  width: 36px;
+  height: 24px;
+  border: 2px solid #281c15;
+  background: #5a3c25;
+}
+
+.motel-suitcase-open {
+  rotate: 18deg;
+}
+
+.motel-branch {
+  width: 54px;
+  height: 5px;
+  background: #3e2819;
+  rotate: -24deg;
+}
+
+.motel-branch-long {
+  width: 76px;
+  rotate: 31deg;
+}
+
+.motel-2d-sign {
+  position: absolute;
+  left: 13%;
+  top: 75%;
+  width: 12%;
+  height: 12%;
+  border-left: 8px solid #693820;
+  rotate: -5deg;
+}
+
+.motel-2d-sign span {
+  position: absolute;
+  left: 12px;
+  top: -10px;
+  width: 118px;
+  border: 2px solid #2a100f;
+  padding: 10px 6px;
+  background: #74151a;
+  color: #e6d3b8;
+  font-size: 16px;
+  font-weight: 1000;
+  text-align: center;
+  rotate: -8deg;
+}
+
+.motel-2d-fog {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(ellipse at 22% 64%, rgba(184, 198, 192, 0.16), transparent 28%),
+    radial-gradient(ellipse at 78% 54%, rgba(184, 198, 192, 0.12), transparent 30%),
+    radial-gradient(circle, transparent 26%, rgba(0, 0, 0, 0.76) 82%);
+  animation: motelFogDrift 9s ease-in-out infinite alternate;
   pointer-events: none;
 }
 
-.corridor-3d-glow-lit {
-  background: rgba(248, 221, 160, 0.16);
-  box-shadow: 0 0 42px rgba(248, 221, 160, 0.42);
+.motel-2d-lit::after,
+.motel-2d-dark::after {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 56%, transparent 0 20%, rgba(0, 0, 0, 0.62) 48%, rgba(0, 0, 0, 0.92) 100%);
+  content: '';
+  pointer-events: none;
+}
+
+.motel-2d-dark::after {
+  background: #000;
+}
+
+.motel-2d-flicker::after {
+  animation: flashlightFlicker 500ms linear forwards;
+}
+
+.motel-2d-stalker-shadow {
+  position: absolute;
+  left: 49%;
+  top: 29%;
+  width: 70px;
+  height: 120px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #020202;
+  filter: blur(12px);
+}
+
+@keyframes motelLampFlicker {
+  0%,
+  72%,
+  100% {
+    opacity: 0.22;
+    box-shadow: 0 18px 55px rgba(184, 139, 69, 0.28);
+  }
+
+  74%,
+  82% {
+    opacity: 0.04;
+    box-shadow: none;
+  }
+}
+
+@keyframes motelFogDrift {
+  from {
+    transform: translateX(-2%);
+  }
+
+  to {
+    transform: translateX(2%);
+  }
 }
 
 .room-image {
@@ -920,11 +1355,11 @@ input {
   height: 62%;
   border: 0;
   background: transparent;
-  cursor: zoom-in;
+  cursor: none;
 }
 
 .door-hotspot:hover {
-  box-shadow: inset 0 0 80px rgba(210, 198, 154, 0.08);
+  box-shadow: none;
 }
 
 .room-bed {
@@ -1096,6 +1531,25 @@ input {
   transform: translateY(-50%);
 }
 
+.window-grandma {
+  position: absolute;
+  left: 50%;
+  bottom: -2%;
+  z-index: 3;
+  width: 88%;
+  height: 110%;
+  transform: translateX(-50%);
+  object-fit: cover;
+  filter:
+    brightness(0.48)
+    contrast(1.45)
+    saturate(0.7)
+    drop-shadow(0 0 18px rgba(0, 0, 0, 0.95));
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 100%);
+  animation: grandmaPeek 650ms ease-out forwards;
+}
+
 .room-scene h1 {
   position: absolute;
   left: 50%;
@@ -1265,6 +1719,24 @@ input {
     0 0 18px rgba(192, 21, 33, 0.42);
 }
 
+.stalker-letter-button {
+  display: grid;
+  width: 92px;
+  height: 92px;
+  place-items: center;
+  justify-self: center;
+  border: 3px solid rgba(255, 231, 225, 0.78);
+  border-radius: 50%;
+  background: linear-gradient(180deg, #210306, #780711);
+  color: #ffdddd;
+  font-size: 48px;
+  font-weight: 1000;
+  line-height: 1;
+  box-shadow:
+    inset 0 0 18px rgba(255, 255, 255, 0.08),
+    0 0 18px rgba(192, 21, 33, 0.42);
+}
+
 .stalker-minigame::after {
   display: block;
   height: 8px;
@@ -1387,6 +1859,94 @@ input {
   font-size: 14px;
   font-weight: 900;
   text-shadow: 0 2px 8px #000;
+}
+
+.mobile-camera-stick {
+  position: absolute;
+  left: 18px;
+  bottom: 82px;
+  z-index: 9;
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.78);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.52);
+  touch-action: none;
+}
+
+.mobile-controls-layer {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 9;
+  height: 214px;
+  background: linear-gradient(180deg, transparent, #000 42%, #000 100%);
+  pointer-events: none;
+}
+
+.mobile-controls-layer .mobile-camera-stick,
+.mobile-controls-layer .mobile-item-controls {
+  pointer-events: auto;
+}
+
+.mobile-joystick {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 2px solid rgba(255, 231, 225, 0.24);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.08), transparent 54%),
+    #000;
+  touch-action: none;
+}
+
+.mobile-joystick span {
+  position: absolute;
+  left: calc(50% - 20px);
+  top: calc(50% - 20px);
+  width: 40px;
+  height: 40px;
+  border: 2px solid rgba(255, 231, 225, 0.34);
+  border-radius: 50%;
+  background: #171717;
+  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.08);
+}
+
+.mobile-item-controls {
+  position: absolute;
+  right: 18px;
+  bottom: 72px;
+  z-index: 9;
+  display: flex;
+  gap: 12px;
+  border-radius: 999px;
+  padding: 10px;
+  background: #000;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.52);
+}
+
+.mobile-item-button {
+  display: grid;
+  width: 68px;
+  height: 68px;
+  place-items: center;
+  overflow: hidden;
+  border: 2px solid rgba(255, 231, 225, 0.18);
+  border-radius: 50%;
+  background: #000;
+}
+
+.mobile-item-button-active {
+  border-color: rgba(255, 226, 150, 0.9);
+  box-shadow: 0 0 18px rgba(255, 226, 150, 0.22);
+}
+
+.mobile-item-button img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.9) contrast(1.15);
 }
 
 .night-complete {
@@ -2202,7 +2762,7 @@ input {
   inset: 0;
   overflow: hidden;
   background: #030303;
-  cursor: crosshair;
+  cursor: none;
 }
 
 .motel-panorama {
@@ -2882,5 +3442,338 @@ input {
 @media (max-height: 700px) {
   .tank-arena {
     height: 52vh;
+  }
+}
+
+.platformer-screen {
+  position: relative;
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 4px),
+    radial-gradient(circle at 50% 54%, rgba(65, 20, 24, 0.24), transparent 34%),
+    #050707;
+  image-rendering: pixelated;
+}
+
+.platformer-viewport {
+  position: relative;
+  width: min(100vw, 1024px);
+  aspect-ratio: 2 / 1;
+  max-height: 88vh;
+  overflow: hidden;
+  border: 4px solid #171b1b;
+  background: #050909;
+  box-shadow:
+    inset 0 0 0 4px #000,
+    0 0 0 2px #35403a,
+    0 28px 70px rgba(0, 0, 0, 0.7);
+}
+
+.platformer-viewport::after {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 48%, transparent 0 34%, rgba(0, 0, 0, 0.58) 78%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.2) 0 1px, transparent 1px 3px);
+  content: '';
+  pointer-events: none;
+}
+
+.platformer-camera {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 512px;
+  height: 128px;
+  transform-origin: left top;
+  scale: 4;
+}
+
+.platformer-level-map {
+  position: absolute;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  user-select: none;
+}
+
+.platformer-level-map {
+  inset: 0;
+  width: 512px;
+  height: 128px;
+  filter: saturate(1.25) contrast(1.18);
+}
+
+.platformer-player {
+  position: absolute;
+  z-index: 3;
+  width: 24px;
+  height: 32px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  transform-origin: center bottom;
+  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.45));
+}
+
+.platformer-player-idle {
+  animation: platformerIdle 900ms steps(2, end) infinite;
+}
+
+.platformer-player-run {
+  animation: none;
+}
+
+.platformer-player-jump {
+  filter: brightness(1.08) drop-shadow(0 3px 0 rgba(0, 0, 0, 0.45));
+}
+
+.platformer-player span {
+  position: absolute;
+  display: block;
+}
+
+.pixel-survivor-backpack {
+  left: 3px;
+  top: 11px;
+  width: 6px;
+  height: 13px;
+  background: #5b5130;
+  box-shadow:
+    0 3px 0 #3a321f,
+    1px -1px 0 #7a6b3b;
+}
+
+.pixel-survivor-head {
+  left: 9px;
+  top: 3px;
+  width: 8px;
+  height: 8px;
+  background: #c98555;
+  box-shadow:
+    -1px -2px 0 #352014,
+    0 -3px 0 #402617,
+    5px -2px 0 #2a1a12,
+    6px 3px 0 #6b3c25;
+}
+
+.pixel-survivor-body {
+  left: 8px;
+  top: 12px;
+  width: 10px;
+  height: 12px;
+  background: #1e5f9e;
+  box-shadow:
+    2px 0 0 #2f7fc1 inset,
+    4px 0 0 #142d47,
+    0 9px 0 #173553,
+    2px 4px 0 #8a4f2e;
+}
+
+.pixel-survivor-arm {
+  top: 13px;
+  width: 3px;
+  height: 10px;
+  background: #1a4065;
+}
+
+.pixel-survivor-arm-back {
+  left: 6px;
+}
+
+.pixel-survivor-arm-front {
+  left: 17px;
+  background: #c98555;
+}
+
+.pixel-survivor-crowbar {
+  left: 19px;
+  top: 19px;
+  width: 2px;
+  height: 10px;
+  background: #7e4325;
+  transform: rotate(12deg);
+  transform-origin: top center;
+}
+
+.pixel-survivor-crowbar::after {
+  position: absolute;
+  right: -3px;
+  bottom: -1px;
+  width: 5px;
+  height: 2px;
+  background: #7e4325;
+  content: '';
+}
+
+.pixel-survivor-leg {
+  top: 23px;
+  width: 4px;
+  height: 8px;
+  background: #76512b;
+  transform-origin: center top;
+}
+
+.pixel-survivor-leg::after {
+  position: absolute;
+  left: -1px;
+  bottom: -2px;
+  width: 6px;
+  height: 3px;
+  background: #201815;
+  content: '';
+}
+
+.pixel-survivor-leg-back {
+  left: 9px;
+  background: #5f4326;
+}
+
+.pixel-survivor-leg-front {
+  left: 15px;
+}
+
+.platformer-player-run .pixel-survivor-leg-front {
+  animation: survivorFrontLeg 260ms steps(2, end) infinite;
+}
+
+.platformer-player-run .pixel-survivor-leg-back {
+  animation: survivorBackLeg 260ms steps(2, end) infinite;
+}
+
+.platformer-player-run .pixel-survivor-arm-front {
+  animation: survivorFrontArm 260ms steps(2, end) infinite;
+}
+
+.platformer-player-jump .pixel-survivor-leg-front {
+  transform: rotate(-12deg) translateY(-1px);
+}
+
+.platformer-player-jump .pixel-survivor-leg-back {
+  transform: rotate(16deg) translateY(-1px);
+}
+
+.platformer-collider {
+  position: absolute;
+  z-index: 2;
+  border: 1px solid rgba(255, 215, 90, 0.4);
+  background: rgba(255, 215, 90, 0.08);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.platformer-hud {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: #e9dac0;
+  font-size: 13px;
+  font-weight: 900;
+  text-shadow: 0 2px 0 #000;
+}
+
+.platformer-hud span {
+  border: 2px solid #2f3934;
+  border-radius: 4px;
+  padding: 6px 8px;
+  background: rgba(5, 8, 8, 0.78);
+}
+
+.platformer-menu-button {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  z-index: 3;
+  min-height: 38px;
+  border: 2px solid #3b463f;
+  border-radius: 4px;
+  padding: 0 14px;
+  background: rgba(5, 8, 8, 0.84);
+  color: #eadcc0;
+  font-size: 14px;
+  font-weight: 900;
+  text-shadow: 0 2px 0 #000;
+}
+
+.platformer-menu-button:hover {
+  background: rgba(80, 12, 17, 0.9);
+}
+
+@keyframes platformerIdle {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+
+  50% {
+    translate: 0 1px;
+  }
+}
+
+@keyframes platformerRun {
+  0% {
+    translate: 0 0;
+    rotate: -2deg;
+  }
+
+  50% {
+    translate: 0 -2px;
+    rotate: 2deg;
+  }
+
+  100% {
+    translate: 0 0;
+    rotate: -2deg;
+  }
+}
+
+@keyframes survivorFrontLeg {
+  0%,
+  49% {
+    transform: rotate(16deg) translateX(1px);
+  }
+
+  50%,
+  100% {
+    transform: rotate(-14deg) translateX(-1px);
+  }
+}
+
+@keyframes survivorBackLeg {
+  0%,
+  49% {
+    transform: rotate(-14deg) translateX(-1px);
+  }
+
+  50%,
+  100% {
+    transform: rotate(16deg) translateX(1px);
+  }
+}
+
+@keyframes survivorFrontArm {
+  0%,
+  49% {
+    transform: translateY(1px);
+  }
+
+  50%,
+  100% {
+    transform: translateY(-1px);
+  }
+}
+
+@media (max-width: 760px) {
+  .platformer-camera {
+    scale: 3;
+  }
+
+  .platformer-viewport {
+    width: min(100vw, 768px);
   }
 }
