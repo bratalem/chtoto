@@ -13,17 +13,25 @@ import stalkerImpact from '../assets/stalker-impact.mp3';
 
 type HeldItem = 'flashlight' | 'cross';
 type StalkerInput = 'KeyQ' | 'KeyE' | 'KeyF' | 'KeyR';
+type StalkerButtonPosition = {
+  x: number;
+  y: number;
+};
+type TutorialPhase = 'grandmaIntro' | 'grandmaActive' | 'stalkerIntro' | 'stalkerActive' | 'done';
 
 type RoomSceneProps = {
   difficultyName: string;
   batteryDrainSeconds: number;
   grandmaReactionSeconds: number;
   showMobileControls: boolean;
+  tutorialMode?: boolean;
+  onTutorialComplete?: () => void;
   onBackToMenu: () => void;
 };
 
 const minGrandmaSpawnDelayMs = 11000;
 const randomGrandmaSpawnDelayMs = 7000;
+const firstGrandmaSpawnDelayMs = 14000;
 const minStalkerSpawnDelayMs = 8000;
 const randomStalkerSpawnDelayMs = 8000;
 const nightDurationSeconds = 5 * 60;
@@ -32,9 +40,26 @@ const stalkerKeys: StalkerInput[] = ['KeyQ', 'KeyE', 'KeyF', 'KeyR'];
 const stalkerReactionMs = 3000;
 const areMonstersEnabled = true;
 const cameraSpeed = 1.6;
+const stalkerAimRadiusPx = 420;
+const grandmaAimPaddingPx = 70;
+
+function createStalkerButtonPosition(): StalkerButtonPosition {
+  return {
+    x: 7 + Math.random() * 86,
+    y: 8 + Math.random() * 84,
+  };
+}
 
 function createStalkerSequence() {
-  return Array.from({ length: stalkerMinigameLength }, (): StalkerInput => stalkerKeys[Math.floor(Math.random() * stalkerKeys.length)]);
+  const sequence: StalkerInput[] = [];
+
+  while (sequence.length < stalkerMinigameLength) {
+    const previousInput = sequence[sequence.length - 1];
+    const availableKeys = stalkerKeys.filter((key) => key !== previousInput);
+    sequence.push(availableKeys[Math.floor(Math.random() * availableKeys.length)]);
+  }
+
+  return sequence;
 }
 
 export function RoomScene({
@@ -42,9 +67,12 @@ export function RoomScene({
   batteryDrainSeconds,
   grandmaReactionSeconds,
   showMobileControls,
+  tutorialMode = false,
+  onTutorialComplete,
   onBackToMenu,
 }: RoomSceneProps) {
-  const stalkerMinigameTimeMs = batteryDrainSeconds === 4 ? 6000 : batteryDrainSeconds === 3 ? 5000 : batteryDrainSeconds === 2 ? 4000 : 3000;
+  const baseStalkerMinigameTimeMs = batteryDrainSeconds === 4 ? 6000 : batteryDrainSeconds === 3 ? 5000 : batteryDrainSeconds === 2 ? 4000 : 3000;
+  const stalkerMinigameTimeMs = tutorialMode ? 12000 : baseStalkerMinigameTimeMs;
   const [isDoorHovered, setIsDoorHovered] = useState(false);
   const [isCorridorOpen, setIsCorridorOpen] = useState(false);
   const [isApproachingCorridor, setIsApproachingCorridor] = useState(false);
@@ -66,11 +94,13 @@ export function RoomScene({
   const [isStalkerMinigameActive, setIsStalkerMinigameActive] = useState(false);
   const [stalkerSequence, setStalkerSequence] = useState<StalkerInput[]>([]);
   const [stalkerStep, setStalkerStep] = useState(0);
+  const [stalkerButtonPosition, setStalkerButtonPosition] = useState<StalkerButtonPosition>(createStalkerButtonPosition);
   const [stalkerKeyTimeLeft, setStalkerKeyTimeLeft] = useState(stalkerMinigameTimeMs);
   const [stalkerReactionLeft, setStalkerReactionLeft] = useState(stalkerReactionMs);
   const toggleTimer = useRef<number | null>(null);
   const cameraKeys = useRef(new Set<string>());
   const virtualCamera = useRef({ x: 0, y: 0 });
+  const roomScene = useRef<HTMLElement | null>(null);
   const roomWindow = useRef<HTMLDivElement | null>(null);
   const stalker = useRef<HTMLDivElement | null>(null);
   const hasGrandmaVisited = useRef(false);
@@ -81,6 +111,12 @@ export function RoomScene({
   const [viewOffset, setViewOffset] = useState({ x: 0, y: 0 });
   const [flashOffset, setFlashOffset] = useState({ x: 0, y: 0 });
   const [joystickKnob, setJoystickKnob] = useState({ x: 0, y: 0 });
+  const [isAimingAtStalker, setIsAimingAtStalker] = useState(false);
+  const [tutorialPhase, setTutorialPhase] = useState<TutorialPhase | null>(tutorialMode ? 'grandmaIntro' : null);
+  const isTutorialPromptVisible = tutorialMode && (tutorialPhase === 'grandmaIntro' || tutorialPhase === 'stalkerIntro' || tutorialPhase === 'done');
+  const [flashlightToggleGrace, setFlashlightToggleGrace] = useState(false);
+  const currentStalkerAimRadiusPx = tutorialMode ? 760 : stalkerAimRadiusPx;
+  const currentGrandmaAimPaddingPx = tutorialMode ? 180 : grandmaAimPaddingPx;
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -89,7 +125,7 @@ export function RoomScene({
         cameraKeys.current.add(event.code);
       }
 
-      if (isStalkerMinigameActive && pressStalkerKey(event.code)) {
+      if (!showMobileControls && isStalkerMinigameActive && pressStalkerKey(event.code)) {
         event.preventDefault();
         return;
       }
@@ -127,7 +163,11 @@ export function RoomScene({
 
         if (!canToggleFlashlight) return;
 
-        setIsFlashlightOn((current) => !current);
+        setIsFlashlightOn((current) => {
+          const next = !current;
+          if (next) setFlashlightToggleGrace(true);
+          return next;
+        });
         setCanToggleFlashlight(false);
         toggleTimer.current = window.setTimeout(() => setCanToggleFlashlight(true), 700);
       }
@@ -152,6 +192,7 @@ export function RoomScene({
     isGameOver,
     isNightComplete,
     isStalkerMinigameActive,
+    showMobileControls,
     stalkerSequence,
     stalkerStep,
   ]);
@@ -172,7 +213,7 @@ export function RoomScene({
 
         return {
           x: Math.max(-1, Math.min(1, current.x + xDirection * cameraSpeed * delta)),
-          y: Math.max(-0.45, Math.min(0.18, current.y + yDirection * cameraSpeed * delta)),
+          y: Math.max(-1, Math.min(1, current.y + yDirection * cameraSpeed * delta)),
         };
       });
 
@@ -222,8 +263,20 @@ export function RoomScene({
 
   function chooseItem(item: HeldItem) {
     if (isGameOver || isNightComplete) return;
+    if (item === 'flashlight' && heldItem === 'flashlight' && battery > 0) {
+      setIsFlashlightOn((current) => {
+        const next = !current;
+        if (next) setFlashlightToggleGrace(true);
+        return next;
+      });
+      return;
+    }
+
     setHeldItem(item);
-    if (item === 'flashlight' && battery > 0) setIsFlashlightOn(true);
+    if (item === 'flashlight' && battery > 0) {
+      setIsFlashlightOn(true);
+      setFlashlightToggleGrace(true);
+    }
   }
 
   function moveJoystick(clientX: number, clientY: number, element: HTMLDivElement) {
@@ -240,6 +293,29 @@ export function RoomScene({
   function releaseJoystick() {
     virtualCamera.current = { x: 0, y: 0 };
     setJoystickKnob({ x: 0, y: 0 });
+  }
+
+  function startTutorialGrandma() {
+    playGrandmaKnocks();
+    setHeldItem('flashlight');
+    setIsFlashlightOn(true);
+    setIsGrandmaVisible(true);
+    setGrandmaRepelProgress(0);
+    setGrandmaTimeLeft(grandmaReactionSeconds);
+    setIsAimingAtGrandma(false);
+    setTutorialPhase('grandmaActive');
+  }
+
+  function startTutorialStalker() {
+    setHeldItem('cross');
+    setIsStalkerVisible(true);
+    setIsStalkerMinigameActive(false);
+    setStalkerSequence(createStalkerSequence());
+    setStalkerStep(0);
+    setStalkerButtonPosition(createStalkerButtonPosition());
+    setStalkerKeyTimeLeft(stalkerMinigameTimeMs);
+    setStalkerReactionLeft(stalkerReactionMs);
+    setTutorialPhase('stalkerActive');
   }
 
   function triggerStalkerGameOver() {
@@ -260,11 +336,33 @@ export function RoomScene({
     }, 300);
   }
 
+  function pressStalkerButton() {
+    const nextStep = stalkerStep + 1;
+    if (nextStep >= stalkerMinigameLength) {
+      setIsStalkerVisible(false);
+      setIsStalkerMinigameActive(false);
+      setStalkerStep(0);
+      setStalkerKeyTimeLeft(stalkerMinigameTimeMs);
+      if (tutorialMode && tutorialPhase === 'stalkerActive') setTutorialPhase('done');
+      return;
+    }
+
+    setStalkerStep(nextStep);
+    setStalkerButtonPosition(createStalkerButtonPosition());
+  }
+
   function pressStalkerKey(keyCode: string) {
     if (!stalkerKeys.includes(keyCode as StalkerInput)) return false;
 
     const expectedInput = stalkerSequence[stalkerStep];
     if (keyCode !== expectedInput) {
+      if (tutorialMode) {
+        setStalkerStep(0);
+        setStalkerSequence(createStalkerSequence());
+        setStalkerKeyTimeLeft(stalkerMinigameTimeMs);
+        return true;
+      }
+
       setIsStalkerVisible(false);
       setIsStalkerMinigameActive(false);
       setStalkerKeyTimeLeft(stalkerMinigameTimeMs);
@@ -278,11 +376,40 @@ export function RoomScene({
       setIsStalkerMinigameActive(false);
       setStalkerStep(0);
       setStalkerKeyTimeLeft(stalkerMinigameTimeMs);
+      if (tutorialMode && tutorialPhase === 'stalkerActive') setTutorialPhase('done');
       return true;
     }
 
     setStalkerStep(nextStep);
     return true;
+  }
+
+  function isCrossAimedAtStalker() {
+    if (!roomScene.current || !stalker.current) return false;
+
+    const sceneBounds = roomScene.current.getBoundingClientRect();
+    const stalkerBounds = stalker.current.getBoundingClientRect();
+    const aimX = sceneBounds.left + sceneBounds.width / 2;
+    const aimY = sceneBounds.top + sceneBounds.height / 2;
+    const stalkerX = stalkerBounds.left + stalkerBounds.width / 2;
+    const stalkerY = stalkerBounds.top + stalkerBounds.height / 2;
+
+    return Math.hypot(aimX - stalkerX, aimY - stalkerY) <= currentStalkerAimRadiusPx;
+  }
+
+  function isFlashlightAimedAtGrandma() {
+    if (!roomScene.current || !roomWindow.current) return false;
+
+    const sceneBounds = roomScene.current.getBoundingClientRect();
+    const windowBounds = roomWindow.current.getBoundingClientRect();
+    const aimX = showMobileControls ? sceneBounds.left + sceneBounds.width / 2 : sceneBounds.left + ((flashOffset.x + 1) / 2) * sceneBounds.width;
+    const aimY = showMobileControls ? sceneBounds.top + sceneBounds.height / 2 : sceneBounds.top + ((flashOffset.y + 1) / 2) * sceneBounds.height;
+    return (
+      aimX >= windowBounds.left - currentGrandmaAimPaddingPx &&
+      aimX <= windowBounds.right + currentGrandmaAimPaddingPx &&
+      aimY >= windowBounds.top - currentGrandmaAimPaddingPx &&
+      aimY <= windowBounds.bottom + currentGrandmaAimPaddingPx
+    );
   }
 
   useEffect(() => {
@@ -313,25 +440,26 @@ export function RoomScene({
     }, 1000);
 
     return () => window.clearInterval(nightTimer);
-  }, [isGameOver, isNightComplete]);
+  }, [isGameOver, isNightComplete, tutorialMode]);
 
   useEffect(() => {
-    if (!areMonstersEnabled || isGameOver || isNightComplete || isThreatActive) return;
+    if (tutorialMode || !areMonstersEnabled || isGameOver || isNightComplete || isThreatActive) return;
 
     const stalkerTimer = window.setTimeout(() => {
       setIsStalkerVisible(true);
       setIsStalkerMinigameActive(false);
       setStalkerSequence(createStalkerSequence());
       setStalkerStep(0);
+      setStalkerButtonPosition(createStalkerButtonPosition());
       setStalkerKeyTimeLeft(stalkerMinigameTimeMs);
       setStalkerReactionLeft(stalkerReactionMs);
     }, minStalkerSpawnDelayMs + Math.random() * randomStalkerSpawnDelayMs);
 
     return () => window.clearTimeout(stalkerTimer);
-  }, [isGameOver, isNightComplete, isThreatActive, stalkerMinigameTimeMs]);
+  }, [isGameOver, isNightComplete, isThreatActive, stalkerMinigameTimeMs, tutorialMode]);
 
   useEffect(() => {
-    if (isGameOver || isNightComplete || heldItem !== 'flashlight' || !isFlashlightOn || battery <= 0) return;
+    if (tutorialMode || isGameOver || isNightComplete || heldItem !== 'flashlight' || !isFlashlightOn || battery <= 0) return;
 
     let lastTick = performance.now();
     const batteryTimer = window.setInterval(() => {
@@ -343,11 +471,18 @@ export function RoomScene({
     }, 100);
 
     return () => window.clearInterval(batteryTimer);
-  }, [batteryDrainSeconds, heldItem, isFlashlightOn, isGameOver, isNightComplete]);
+  }, [batteryDrainSeconds, heldItem, isFlashlightOn, isGameOver, isNightComplete, tutorialMode]);
 
   useEffect(() => {
     if (battery === 0) setIsFlashlightOn(false);
   }, [battery]);
+
+  useEffect(() => {
+    if (!flashlightToggleGrace) return;
+
+    const graceTimer = window.setTimeout(() => setFlashlightToggleGrace(false), 900);
+    return () => window.clearTimeout(graceTimer);
+  }, [flashlightToggleGrace]);
 
   useEffect(() => {
     if (isGameOver || isNightComplete || heldItem !== 'flashlight' || !isFlashlightOn || isCorridorOpen || battery >= 30 || battery <= 0) {
@@ -364,13 +499,13 @@ export function RoomScene({
   }, [battery, heldItem, isCorridorOpen, isFlashlightOn, isGameOver, isNightComplete]);
 
   useEffect(() => {
-    if (!areMonstersEnabled || isGameOver || isNightComplete || isThreatActive) return;
+    if (tutorialMode || !areMonstersEnabled || isGameOver || isNightComplete || isThreatActive) return;
 
     const difficultyStep = Math.max(0, Math.round((4 - batteryDrainSeconds) / 1));
     const difficultyDelayBonus = difficultyStep * 500;
     const spawnDelay = hasGrandmaVisited.current
       ? Math.max(6000, minGrandmaSpawnDelayMs + Math.random() * randomGrandmaSpawnDelayMs - difficultyDelayBonus)
-      : 2500;
+      : firstGrandmaSpawnDelayMs;
     const visitTimer = window.setTimeout(() => {
       hasGrandmaVisited.current = true;
       playGrandmaKnocks();
@@ -382,17 +517,23 @@ export function RoomScene({
     }, spawnDelay);
 
     return () => window.clearTimeout(visitTimer);
-  }, [batteryDrainSeconds, grandmaReactionSeconds, isGameOver, isNightComplete, isThreatActive]);
+  }, [batteryDrainSeconds, grandmaReactionSeconds, isGameOver, isNightComplete, isThreatActive, tutorialMode]);
 
   useEffect(() => {
     if (!isGrandmaVisible || isGameOver || isNightComplete) return;
 
     const repelTimer = window.setInterval(() => {
-      const isRepellingGrandma = !isCorridorOpen && heldItem === 'flashlight' && isFlashlightOn;
+      const isRepellingGrandma =
+        !isCorridorOpen &&
+        heldItem === 'flashlight' &&
+        isFlashlightOn &&
+        (flashlightToggleGrace || isFlashlightAimedAtGrandma());
 
       setIsAimingAtGrandma(isRepellingGrandma);
 
       if (!isRepellingGrandma) {
+        if (tutorialMode) return;
+
         setGrandmaTimeLeft((current) => {
           const next = Math.max(0, current - 0.1);
           if (next === 0) {
@@ -407,11 +548,12 @@ export function RoomScene({
       }
 
       setGrandmaRepelProgress((current) => {
-        const next = current + 0.1;
-        if (next >= 0.95) {
+        const next = current + 0.04;
+        if (next >= 1) {
           setIsGrandmaVisible(false);
           setGrandmaTimeLeft(grandmaReactionSeconds);
           setIsAimingAtGrandma(false);
+          if (tutorialMode && tutorialPhase === 'grandmaActive') setTutorialPhase('stalkerIntro');
           return 0;
         }
 
@@ -420,21 +562,30 @@ export function RoomScene({
     }, 100);
 
     return () => window.clearInterval(repelTimer);
-  }, [grandmaReactionSeconds, heldItem, isCorridorOpen, isFlashlightOn, isGameOver, isGrandmaVisible, isNightComplete]);
+  }, [flashOffset, flashlightToggleGrace, grandmaReactionSeconds, heldItem, isCorridorOpen, isFlashlightOn, isGameOver, isGrandmaVisible, isNightComplete, showMobileControls, tutorialMode, tutorialPhase]);
 
   useEffect(() => {
     if (!isStalkerVisible || isGameOver || isNightComplete) return;
 
     const stalkerTimer = window.setInterval(() => {
-      const canStartMinigame = heldItem === 'cross';
+      const canStartMinigame = heldItem === 'cross' && isCrossAimedAtStalker();
+      setIsAimingAtStalker(canStartMinigame);
+
       if (canStartMinigame && !isStalkerMinigameActive) {
         setIsStalkerMinigameActive(true);
+        setStalkerSequence(createStalkerSequence());
+        setStalkerButtonPosition(createStalkerButtonPosition());
         setStalkerKeyTimeLeft(stalkerMinigameTimeMs);
       }
     }, 100);
 
     return () => window.clearInterval(stalkerTimer);
-  }, [heldItem, isGameOver, isNightComplete, isStalkerMinigameActive, isStalkerVisible, stalkerMinigameTimeMs]);
+  }, [flashOffset, heldItem, isGameOver, isNightComplete, isStalkerMinigameActive, isStalkerVisible, showMobileControls, stalkerMinigameTimeMs]);
+
+  useEffect(() => {
+    if (isStalkerVisible && !isGameOver && !isNightComplete) return;
+    setIsAimingAtStalker(false);
+  }, [isGameOver, isNightComplete, isStalkerVisible]);
 
   useEffect(() => {
     if (!isStalkerVisible || isStalkerMinigameActive || isGameOver || isNightComplete) return;
@@ -442,13 +593,14 @@ export function RoomScene({
     const reactionTimer = window.setInterval(() => {
       setStalkerReactionLeft((current) => {
         const next = Math.max(0, current - 100);
+        if (tutorialMode) return current;
         if (next === 0) triggerStalkerGameOver();
         return next;
       });
     }, 100);
 
     return () => window.clearInterval(reactionTimer);
-  }, [isGameOver, isNightComplete, isStalkerMinigameActive, isStalkerVisible]);
+  }, [isGameOver, isNightComplete, isStalkerMinigameActive, isStalkerVisible, tutorialMode]);
 
   useEffect(() => {
     if (!isStalkerVisible || !isStalkerMinigameActive || isGameOver || isNightComplete) return;
@@ -457,6 +609,7 @@ export function RoomScene({
       setStalkerKeyTimeLeft((current) => {
         const next = Math.max(0, current - 100);
         if (next === 0) {
+          if (tutorialMode) return stalkerMinigameTimeMs;
           setIsStalkerVisible(false);
           setIsStalkerMinigameActive(false);
           triggerStalkerGameOver();
@@ -470,7 +623,7 @@ export function RoomScene({
     const keyTimer = window.setInterval(tickStalkerKey, 100);
 
     return () => window.clearInterval(keyTimer);
-  }, [isGameOver, isNightComplete, isStalkerMinigameActive, isStalkerVisible]);
+  }, [isGameOver, isNightComplete, isStalkerMinigameActive, isStalkerVisible, stalkerMinigameTimeMs, tutorialMode]);
 
   const isEasyMode = batteryDrainSeconds === 4;
   const isFlashlightActive = heldItem === 'flashlight' && isFlashlightOn;
@@ -483,13 +636,13 @@ export function RoomScene({
   const nightMinutes = Math.floor(nightTimeLeft / 60);
   const nightSeconds = String(nightTimeLeft % 60).padStart(2, '0');
   const stalkerInputLabel = (stalkerSequence[stalkerStep] ?? 'KeyQ').replace('Key', '');
-  const stalkerProgress = (stalkerStep / stalkerMinigameLength) * 100;
   const stalkerKeyTimeProgress = (stalkerKeyTimeLeft / stalkerMinigameTimeMs) * 100;
   const stalkerReactionProgress = (stalkerReactionLeft / stalkerReactionMs) * 100;
   const shouldShowGrandmaWarning = isGrandmaVisible && !isCorridorOpen && (isEasyMode || isAimingAtGrandma || grandmaRepelProgress > 0);
 
   return (
     <section
+      ref={roomScene}
       className={[
         'room-scene',
         showMobileControls ? 'room-scene-phone' : '',
@@ -559,21 +712,23 @@ export function RoomScene({
         </div>
       )}
       {areMonstersEnabled && isStalkerVisible && isStalkerMinigameActive && (
-        <div className="stalker-minigame">
+        <div className={showMobileControls ? 'stalker-minigame' : 'stalker-minigame stalker-minigame-keyboard'}>
+          <strong>{stalkerInputLabel}</strong>
           <button
             className="stalker-letter-button"
             type="button"
-            onClick={() => pressStalkerKey(stalkerSequence[stalkerStep] ?? 'KeyQ')}
+            style={{ left: `${stalkerButtonPosition.x}%`, top: `${stalkerButtonPosition.y}%` }}
+            onClick={pressStalkerButton}
+            aria-label="РќР°Р¶РјРё РєРЅРѕРїРєСѓ"
           >
-            {stalkerInputLabel}
+            ЖМИ
           </button>
-          <b style={{ width: `${stalkerProgress}%` }} />
           <i style={{ width: `${stalkerKeyTimeProgress}%` }} />
         </div>
       )}
-      {areMonstersEnabled && isStalkerVisible && !isStalkerMinigameActive && (
+      {areMonstersEnabled && isEasyMode && isStalkerVisible && !isStalkerMinigameActive && (
         <div className="stalker-warning">
-          <span>Наведи крест</span>
+          <span>{isAimingAtStalker ? 'Держи крест на нем' : 'Наведи крест на сталкера'}</span>
           <b style={{ width: `${stalkerReactionProgress}%` }} />
         </div>
       )}
@@ -589,6 +744,37 @@ export function RoomScene({
           <span>Свети в окно!</span>
           {isEasyMode && <em>{grandmaTimeLeft.toFixed(1)}s</em>}
           <b style={{ width: `${grandmaRepelProgress * 100}%` }} />
+        </div>
+      )}
+      {isTutorialPromptVisible && (
+        <div className="tutorial-room-prompt" role="dialog" aria-label="Задание туториала">
+          {tutorialPhase === 'grandmaIntro' && (
+            <>
+              <h2>Туториал</h2>
+              <p>Если ты слышишь стуки или видишь в окне криповую бабку, туда надо посветить фонариком.</p>
+              <button className="horror-button horror-button-primary" type="button" onClick={startTutorialGrandma}>
+                Потренироваться
+              </button>
+            </>
+          )}
+          {tutorialPhase === 'stalkerIntro' && (
+            <>
+              <h2>Молодец!</h2>
+              <p>Если с потолка стекает кровь, надо навести крест на сталкера и сыграть в мини-игру, чтобы прогнать его.</p>
+              <button className="horror-button horror-button-primary" type="button" onClick={startTutorialStalker}>
+                Потренироваться
+              </button>
+            </>
+          )}
+          {tutorialPhase === 'done' && (
+            <>
+              <h2>Молодец!</h2>
+              <p>Теперь ты знаешь главное. Можно начинать настоящую игру.</p>
+              <button className="horror-button horror-button-primary" type="button" onClick={onTutorialComplete}>
+                Продолжить
+              </button>
+            </>
+          )}
         </div>
       )}
       {isGameOver && (

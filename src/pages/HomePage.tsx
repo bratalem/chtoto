@@ -44,7 +44,7 @@ const difficulties: Difficulty[] = [
   },
 ];
 
-type Screen = 'menu' | 'soundWarning' | 'story' | 'eyes' | 'room';
+type Screen = 'menu' | 'tutorialPrompt' | 'tutorialWarning' | 'tutorial' | 'soundWarning' | 'story' | 'eyes' | 'room';
 type DeviceMode = 'computer' | 'phone';
 
 export function HomePage() {
@@ -57,6 +57,7 @@ export function HomePage() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>(difficulties[1]);
   const [hoveredDifficulty, setHoveredDifficulty] = useState<Difficulty>(difficulties[1]);
   const [deviceMode, setDeviceMode] = useState<DeviceMode>('computer');
+  const [isTutorialRun, setIsTutorialRun] = useState(false);
   const timers = useRef<number[]>([]);
 
   useEffect(() => {
@@ -77,11 +78,30 @@ export function HomePage() {
 
   function startIntro() {
     timers.current.forEach((timer) => window.clearTimeout(timer));
+    setScreen('tutorialPrompt');
+  }
+
+  function openTutorial() {
+    timers.current.forEach((timer) => window.clearTimeout(timer));
+    setIsTutorialRun(true);
+    setScreen('eyes');
+    timers.current = [window.setTimeout(() => setScreen('room'), 100)];
+  }
+
+  function declineTutorial() {
+    timers.current.forEach((timer) => window.clearTimeout(timer));
+    setScreen('tutorialWarning');
+  }
+
+  function continueAfterTutorial() {
+    timers.current.forEach((timer) => window.clearTimeout(timer));
+    setIsTutorialRun(false);
     setScreen('soundWarning');
   }
 
   function continueAfterSoundWarning() {
     timers.current.forEach((timer) => window.clearTimeout(timer));
+    setIsTutorialRun(false);
     setScreen('story');
     timers.current = [
       window.setTimeout(() => setScreen('eyes'), 6200),
@@ -91,6 +111,7 @@ export function HomePage() {
 
   function startRoom() {
     timers.current.forEach((timer) => window.clearTimeout(timer));
+    setIsTutorialRun(false);
     setScreen('eyes');
     timers.current = [window.setTimeout(() => setScreen('room'), 100)];
   }
@@ -131,6 +152,11 @@ export function HomePage() {
   }
 
   const canPlay = Boolean(session) || isGuest;
+  const authStatusText = session?.user.email
+    ? `Успешно вошли как ${session.user.email}`
+    : isGuest
+      ? 'Играете как гость'
+      : '';
 
   return (
     <main className={`horror-screen horror-screen-${screen}`}>
@@ -139,6 +165,7 @@ export function HomePage() {
           <img className="handprint handprint-left" src={bloodyHand} alt="" aria-hidden="true" />
           <img className="handprint handprint-right" src={bloodyHand} alt="" aria-hidden="true" />
           <section className="horror-menu" aria-label="Главное меню">
+            {authStatusText && <p className={session ? 'menu-auth-status menu-auth-status-account' : 'menu-auth-status'}>{authStatusText}</p>}
             <h1 className="blood-title">Motel Horror</h1>
             <div className="menu-actions">
               {canPlay && (
@@ -232,6 +259,36 @@ export function HomePage() {
         </>
       )}
 
+      {screen === 'tutorialPrompt' && (
+        <section className="story-panel tutorial-panel tutorial-choice-panel" aria-label="Выбор туториала">
+          <h1>Хотите пройти туториал?</h1>
+          <p>Он быстро покажет, как выживать, пользоваться предметами и защищаться от монстров.</p>
+          <div className="tutorial-actions">
+            <button className="horror-button horror-button-primary" type="button" onClick={openTutorial}>
+              Пройти туториал
+            </button>
+            <button className="horror-button" type="button" onClick={declineTutorial}>
+              Отказаться
+            </button>
+          </div>
+        </section>
+      )}
+
+      {screen === 'tutorialWarning' && (
+        <section className="story-panel tutorial-panel tutorial-choice-panel" aria-label="Предупреждение о туториале">
+          <h1>Туториал рекомендуется</h1>
+          <p>При первом прохождении настоятельно рекомендуется пройти туториал, иначе можно не понять, как отпугивать бабку и сталкера.</p>
+          <div className="tutorial-actions">
+            <button className="horror-button horror-button-primary" type="button" onClick={openTutorial}>
+              Пройти туториал
+            </button>
+            <button className="horror-button" type="button" onClick={continueAfterTutorial}>
+              Все равно пропустить
+            </button>
+          </div>
+        </section>
+      )}
+
       {screen === 'soundWarning' && (
         <section className="story-panel sound-warning-panel" aria-label="Предупреждение">
           <h1>Включи звук</h1>
@@ -259,7 +316,6 @@ export function HomePage() {
             За стенами что-то скребется. Телефон молчит. Дверь будто стала тяжелее. Твоя цель -
             выжить 5 ночей.
           </p>
-          <p className="story-difficulty">Сложность: {selectedDifficulty.name}</p>
           <button className="horror-button horror-button-primary story-start" type="button" onClick={startRoom}>
             Начать
           </button>
@@ -274,7 +330,12 @@ export function HomePage() {
           batteryDrainSeconds={selectedDifficulty.batteryDrainSeconds}
           grandmaReactionSeconds={selectedDifficulty.grandmaReactionSeconds}
           showMobileControls={deviceMode === 'phone'}
-          onBackToMenu={() => setScreen('menu')}
+          tutorialMode={isTutorialRun}
+          onTutorialComplete={continueAfterTutorial}
+          onBackToMenu={() => {
+            setIsTutorialRun(false);
+            setScreen('menu');
+          }}
         />
       )}
     </main>
