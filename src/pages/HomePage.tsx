@@ -1,8 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import bloodyHand from '../assets/bloody-hand.jpg';
 import scaryEyes from '../assets/scary-eyes.jpg';
 import { RoomScene } from '../components/RoomScene';
+import {
+  loadAccountUnlockedNight,
+  loadGuestUnlockedNight,
+  saveAccountUnlockedNight,
+  saveGuestUnlockedNight,
+} from '../lib/progress';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 type Difficulty = {
@@ -44,7 +50,7 @@ const difficulties: Difficulty[] = [
   },
 ];
 
-type Screen = 'menu' | 'tutorialPrompt' | 'tutorialWarning' | 'tutorial' | 'soundWarning' | 'story' | 'eyes' | 'room';
+type Screen = 'menu' | 'nightSelect' | 'tutorialPrompt' | 'tutorialWarning' | 'tutorial' | 'soundWarning' | 'story' | 'eyes' | 'room';
 type DeviceMode = 'computer' | 'phone';
 
 export function HomePage() {
@@ -56,6 +62,8 @@ export function HomePage() {
   const [isGuest, setIsGuest] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>(difficulties[1]);
   const [hoveredDifficulty, setHoveredDifficulty] = useState<Difficulty>(difficulties[1]);
+  const [selectedNight, setSelectedNight] = useState(1);
+  const [unlockedNight, setUnlockedNight] = useState(1);
   const [deviceMode, setDeviceMode] = useState<DeviceMode>('computer');
   const [isTutorialRun, setIsTutorialRun] = useState(false);
   const timers = useRef<number[]>([]);
@@ -76,8 +84,63 @@ export function HomePage() {
     return () => data.subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (isGuest) {
+      const guestNight = loadGuestUnlockedNight();
+      setUnlockedNight(guestNight);
+      setSelectedNight((current) => Math.min(current, guestNight));
+      return;
+    }
+
+    if (!session) {
+      setUnlockedNight(1);
+      setSelectedNight(1);
+      return;
+    }
+
+    loadAccountUnlockedNight()
+      .then((accountNight) => {
+        setUnlockedNight(accountNight);
+        setSelectedNight((current) => Math.min(current, accountNight));
+      })
+      .catch((error: Error) => {
+        setLoginMessage(error.message);
+      });
+  }, [isGuest, session]);
+
+  const unlockNight = useCallback((night: number) => {
+    setUnlockedNight((current) => {
+      const nextNight = Math.max(current, night);
+      setSelectedNight(Math.min(5, nextNight));
+
+      if (isGuest) {
+        saveGuestUnlockedNight(nextNight);
+      } else if (session) {
+        void saveAccountUnlockedNight(nextNight).catch((error: Error) => {
+          setLoginMessage(error.message);
+        });
+      }
+
+      return nextNight;
+    });
+  }, [isGuest, session]);
+
   function startIntro() {
     timers.current.forEach((timer) => window.clearTimeout(timer));
+    setScreen('nightSelect');
+  }
+
+  function chooseNight(night: number) {
+    if (night > unlockedNight) return;
+    timers.current.forEach((timer) => window.clearTimeout(timer));
+    setSelectedNight(night);
+    setIsTutorialRun(false);
+    setScreen('soundWarning');
+  }
+
+  function startTutorialFromNightSelect() {
+    timers.current.forEach((timer) => window.clearTimeout(timer));
+    setSelectedNight(1);
     setScreen('tutorialPrompt');
   }
 
@@ -182,14 +245,14 @@ export function HomePage() {
                   type="button"
                   onClick={() => setDeviceMode('computer')}
                 >
-                  Computer
+                  Компьютер
                 </button>
                 <button
                   className={deviceMode === 'phone' ? 'device-choice-button device-choice-button-active' : 'device-choice-button'}
                   type="button"
                   onClick={() => setDeviceMode('phone')}
                 >
-                  Phone
+                  Телефон
                 </button>
               </div>
                 </>
@@ -257,6 +320,41 @@ export function HomePage() {
             )}
           </section>
         </>
+      )}
+
+      {screen === 'nightSelect' && (
+        <section className="night-select-panel" aria-label="Выбор ночи">
+          <h1>Выбери ночь</h1>
+          <div className="night-choice night-choice-screen">
+            {[1, 2, 3, 4, 5].map((night) => {
+              const isLocked = night > unlockedNight;
+              return (
+                <button
+                  className={[
+                    'night-choice-button',
+                    selectedNight === night ? 'night-choice-button-active' : '',
+                    isLocked ? 'night-choice-button-locked' : '',
+                  ].filter(Boolean).join(' ')}
+                  type="button"
+                  key={night}
+                  disabled={isLocked}
+                  onClick={() => chooseNight(night)}
+                >
+                  <span>{night}</span>
+                  <small>{isLocked ? 'закрыто' : 'открыто'}</small>
+                </button>
+              );
+            })}
+          </div>
+          <div className="night-select-actions">
+            <button className="horror-button" type="button" onClick={() => setScreen('menu')}>
+              Назад
+            </button>
+            <button className="horror-button" type="button" onClick={startTutorialFromNightSelect}>
+              Туториал
+            </button>
+          </div>
+        </section>
       )}
 
       {screen === 'tutorialPrompt' && (
@@ -329,13 +427,15 @@ export function HomePage() {
           difficultyName={selectedDifficulty.name}
           batteryDrainSeconds={selectedDifficulty.batteryDrainSeconds}
           grandmaReactionSeconds={selectedDifficulty.grandmaReactionSeconds}
+          startNight={selectedNight}
           showMobileControls={deviceMode === 'phone'}
           tutorialMode={isTutorialRun}
           onTutorialComplete={continueAfterTutorial}
           onBackToMenu={() => {
             setIsTutorialRun(false);
-            setScreen('menu');
+            setScreen('nightSelect');
           }}
+          onNightUnlocked={unlockNight}
         />
       )}
     </main>

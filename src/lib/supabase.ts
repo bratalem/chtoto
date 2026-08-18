@@ -12,7 +12,7 @@ export const supabase = createClient(
   anonKey ?? 'not-configured',
   {
     auth: {
-      persistSession: false,
+      persistSession: true,
     },
   },
 );
