@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import batteryThief from '../assets/battery-thief.jpg';
 import ceilingStalker from '../assets/ceiling-stalker.png';
-import crossControl from '../assets/cross-control.jpg';
+import crowbarControl from '../assets/crowbar-control.png';
+import crowbarPixel from '../assets/crowbar-pixel.png';
 import crowbarSwingSheet from '../assets/crowbar-first-person/crowbar-first-person-sheet.png';
 import deathScream from '../assets/death-scream.mp3';
 import flashlightControl from '../assets/flashlight-control.jpg';
@@ -19,7 +20,7 @@ type StalkerButtonPosition = {
   x: number;
   y: number;
 };
-type TutorialPhase = 'grandmaIntro' | 'grandmaActive' | 'stalkerIntro' | 'stalkerActive' | 'done';
+type TutorialPhase = 'grandmaIntro' | 'grandmaActive' | 'stalkerIntro' | 'stalkerActive' | 'batteryThiefIntro' | 'batteryThiefActive' | 'done';
 
 type RoomSceneProps = {
   difficultyName: string;
@@ -136,20 +137,23 @@ export function RoomScene({
   const [joystickKnob, setJoystickKnob] = useState({ x: 0, y: 0 });
   const [isAimingAtStalker, setIsAimingAtStalker] = useState(false);
   const [tutorialPhase, setTutorialPhase] = useState<TutorialPhase | null>(tutorialMode ? 'grandmaIntro' : null);
-  const isTutorialPromptVisible = tutorialMode && (tutorialPhase === 'grandmaIntro' || tutorialPhase === 'stalkerIntro' || tutorialPhase === 'done');
+  const isTutorialPromptVisible = tutorialMode && (
+    tutorialPhase === 'grandmaIntro' ||
+    tutorialPhase === 'stalkerIntro' ||
+    tutorialPhase === 'batteryThiefIntro' ||
+    tutorialPhase === 'done'
+  );
   const [flashlightToggleGrace, setFlashlightToggleGrace] = useState(false);
-  const [hasReadGrandmaInstruction, setHasReadGrandmaInstruction] = useState(false);
-  const [hasReadStalkerInstruction, setHasReadStalkerInstruction] = useState(false);
-  const currentStalkerAimPaddingPx = tutorialMode ? 160 : stalkerAimPaddingPx;
+  const [, setHasReadGrandmaInstruction] = useState(false);
+  const [, setHasReadStalkerInstruction] = useState(false);
+  const currentStalkerAimPaddingPx = tutorialMode ? 160 : showMobileControls ? 220 : stalkerAimPaddingPx;
   const currentGrandmaAimPaddingPx = tutorialMode ? 180 : showMobileControls ? 20 : grandmaAimPaddingPx;
   const nightPressure = getNightPressure(currentNight);
   const currentStalkerReactionMs = Math.max(1500, stalkerReactionMs - nightPressure * 300);
   const currentGrandmaReactionSeconds = Math.max(1.2, grandmaReactionSeconds - nightPressure * 0.35);
   const currentBatteryDrainSeconds = Math.max(0.75, batteryDrainSeconds - nightPressure * 0.18);
   const currentBatteryThiefReactionMs = Math.max(2800, batteryThiefReactionMs - nightPressure * 450);
-  const isGrandmaInstructionVisible = !tutorialMode && isGrandmaVisible && !hasReadGrandmaInstruction;
-  const isStalkerInstructionVisible = !tutorialMode && isStalkerVisible && !hasReadStalkerInstruction;
-  const isInstructionPromptVisible = isGrandmaInstructionVisible || isStalkerInstructionVisible || isTutorialPromptVisible;
+  const isInstructionPromptVisible = isTutorialPromptVisible;
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -327,6 +331,7 @@ export function RoomScene({
     crowbarSwingTimer.current = window.setTimeout(() => setIsCrowbarSwinging(false), 360);
     setIsBatteryThiefVisible(false);
     setBatteryThiefTimeLeft(currentBatteryThiefReactionMs);
+    if (tutorialMode && tutorialPhase === 'batteryThiefActive') setTutorialPhase('done');
   }
 
   function moveJoystick(clientX: number, clientY: number, element: HTMLDivElement) {
@@ -370,6 +375,13 @@ export function RoomScene({
     setTutorialPhase('stalkerActive');
   }
 
+  function startTutorialBatteryThief() {
+    setHeldItem('crowbar');
+    setIsBatteryThiefVisible(true);
+    setBatteryThiefTimeLeft(currentBatteryThiefReactionMs);
+    setTutorialPhase('batteryThiefActive');
+  }
+
   function triggerStalkerGameOver() {
     setIsStalkerVisible(false);
     setIsStalkerMinigameActive(false);
@@ -395,7 +407,7 @@ export function RoomScene({
       setIsStalkerMinigameActive(false);
       setStalkerStep(0);
       setStalkerKeyTimeLeft(stalkerMinigameTimeMs);
-      if (tutorialMode && tutorialPhase === 'stalkerActive') setTutorialPhase('done');
+      if (tutorialMode && tutorialPhase === 'stalkerActive') setTutorialPhase('batteryThiefIntro');
       return;
     }
 
@@ -428,7 +440,7 @@ export function RoomScene({
       setIsStalkerMinigameActive(false);
       setStalkerStep(0);
       setStalkerKeyTimeLeft(stalkerMinigameTimeMs);
-      if (tutorialMode && tutorialPhase === 'stalkerActive') setTutorialPhase('done');
+      if (tutorialMode && tutorialPhase === 'stalkerActive') setTutorialPhase('batteryThiefIntro');
       return true;
     }
 
@@ -437,6 +449,7 @@ export function RoomScene({
   }
 
   function isCrossAimedAtStalker() {
+    if (showMobileControls) return true;
     if (!roomScene.current || !stalker.current) return false;
 
     const sceneBounds = roomScene.current.getBoundingClientRect();
@@ -793,7 +806,11 @@ export function RoomScene({
           <img src={heldCross} alt="" />
         </div>
       )}
-      {heldItem === 'crowbar' && <div className="held-crowbar" aria-hidden="true" />}
+      {heldItem === 'crowbar' && (
+        <div className="held-crowbar" aria-hidden="true">
+          <img src={crowbarPixel} alt="" />
+        </div>
+      )}
       {isCrowbarSwinging && (
         <div
           className="crowbar-swing-fps"
@@ -876,6 +893,15 @@ export function RoomScene({
               </button>
             </>
           )}
+          {tutorialPhase === 'batteryThiefIntro' && (
+            <>
+              <h2>Балунбой</h2>
+              <p>Иногда он появляется на кровати и пытается украсть заряд батарейки. Возьми лом и ударь его, пока полоска не закончилась.</p>
+              <button className="horror-button horror-button-primary" type="button" onClick={startTutorialBatteryThief}>
+                Потренироваться
+              </button>
+            </>
+          )}
           {tutorialPhase === 'done' && (
             <>
               <h2>Молодец!</h2>
@@ -885,24 +911,6 @@ export function RoomScene({
               </button>
             </>
           )}
-        </div>
-      )}
-      {isGrandmaInstructionVisible && (
-        <div className="tutorial-room-prompt" role="dialog" aria-label="Подсказка">
-          <h2>Опасность у окна</h2>
-          <p>Если слышишь стуки или видишь в окне криповую бабку, посвети туда фонариком.</p>
-          <button className="horror-button horror-button-primary" type="button" onClick={() => setHasReadGrandmaInstruction(true)}>
-            Понятно
-          </button>
-        </div>
-      )}
-      {isStalkerInstructionVisible && (
-        <div className="tutorial-room-prompt" role="dialog" aria-label="Подсказка">
-          <h2>Кровь с потолка</h2>
-          <p>Если с потолка стекает кровь, наведи крест на сталкера и сыграй в мини-игру, чтобы прогнать его.</p>
-          <button className="horror-button horror-button-primary" type="button" onClick={() => setHasReadStalkerInstruction(true)}>
-            Понятно
-          </button>
         </div>
       )}
       {isGameOver && (
@@ -958,7 +966,7 @@ export function RoomScene({
           onClick={() => chooseItem('cross')}
           aria-label="Крест"
         >
-          <img src={crossControl} alt="" />
+          <img src={heldCross} alt="" />
         </button>
         <button
           className={heldItem === 'crowbar' ? 'mobile-item-button mobile-item-button-active' : 'mobile-item-button'}
@@ -966,7 +974,7 @@ export function RoomScene({
           onClick={() => chooseItem('crowbar')}
           aria-label="Лом"
         >
-          <span className="crowbar-icon" />
+          <img className="crowbar-control-icon" src={crowbarControl} alt="" />
         </button>
       </div>
         </div>

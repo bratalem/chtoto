@@ -318,6 +318,7 @@ export function HomePage() {
                 </aside>
               </div>
             )}
+
           </section>
         </>
       )}
