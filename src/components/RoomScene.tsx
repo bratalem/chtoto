@@ -920,7 +920,7 @@ export function RoomScene({
           {tutorialPhase === 'done' && (
             <>
               <h2>Молодец!</h2>
-              <p>Теперь ты знаешь главное. Если появится маленький воришка батарейки, возьми лом на 3 и ударь его, пока он не забрал заряд.</p>
+              <p>Молодец, теперь приступай к игре.</p>
               <button className="horror-button horror-button-primary" type="button" onClick={onTutorialComplete}>
                 Продолжить
               </button>
