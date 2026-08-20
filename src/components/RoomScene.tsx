@@ -109,7 +109,6 @@ export function RoomScene({
   const [isStalkerVisible, setIsStalkerVisible] = useState(false);
   const [isStalkerMinigameActive, setIsStalkerMinigameActive] = useState(false);
   const [isBatteryThiefVisible, setIsBatteryThiefVisible] = useState(false);
-  const [batteryThiefTimeLeft, setBatteryThiefTimeLeft] = useState(batteryThiefReactionMs);
   const [isCrowbarSwinging, setIsCrowbarSwinging] = useState(false);
   const [stalkerSequence, setStalkerSequence] = useState<StalkerInput[]>([]);
   const [stalkerStep, setStalkerStep] = useState(0);
@@ -375,7 +374,6 @@ export function RoomScene({
   function hitBatteryThief() {
     if (!isBatteryThiefVisible || heldItem !== 'crowbar' || isInstructionPromptVisible || isGameOver || isNightComplete) return;
     setIsBatteryThiefVisible(false);
-    setBatteryThiefTimeLeft(currentBatteryThiefReactionMs);
     if (tutorialMode && tutorialPhase === 'batteryThiefActive') setTutorialPhase('done');
   }
 
@@ -401,7 +399,6 @@ export function RoomScene({
 
   function spawnBatteryThief() {
     setIsBatteryThiefVisible(true);
-    setBatteryThiefTimeLeft(currentBatteryThiefReactionMs);
   }
 
   function moveJoystick(clientX: number, clientY: number, element: HTMLDivElement) {
@@ -445,7 +442,6 @@ export function RoomScene({
 
   function startTutorialBatteryThief() {
     setIsBatteryThiefVisible(true);
-    setBatteryThiefTimeLeft(currentBatteryThiefReactionMs);
     setTutorialPhase('batteryThiefActive');
   }
 
@@ -594,22 +590,20 @@ export function RoomScene({
 
   useEffect(() => {
     if (!isBatteryThiefVisible || isInstructionPromptVisible || isGameOver || isNightComplete) return;
+    if (tutorialMode) return;
 
+    let timeLeft = currentBatteryThiefReactionMs;
     const thiefTimer = window.setInterval(() => {
-      setBatteryThiefTimeLeft((current) => {
-        const next = Math.max(0, current - 100);
-        if (next === 0) {
-          setBattery((batteryLevel) => Math.max(0, batteryLevel - batteryThiefDrainPercent));
-          setIsBatteryThiefVisible(false);
-          return currentBatteryThiefReactionMs;
-        }
+      timeLeft = Math.max(0, timeLeft - 100);
+      if (timeLeft > 0) return;
 
-        return next;
-      });
+      setBattery((batteryLevel) => Math.max(0, batteryLevel - batteryThiefDrainPercent));
+      setIsBatteryThiefVisible(false);
+      window.clearInterval(thiefTimer);
     }, 100);
 
     return () => window.clearInterval(thiefTimer);
-  }, [currentBatteryThiefReactionMs, isBatteryThiefVisible, isGameOver, isInstructionPromptVisible, isNightComplete]);
+  }, [currentBatteryThiefReactionMs, isBatteryThiefVisible, isGameOver, isInstructionPromptVisible, isNightComplete, tutorialMode]);
 
   useEffect(() => {
     if (tutorialMode || isInstructionPromptVisible || isGameOver || isNightComplete || heldItem !== 'flashlight' || !isFlashlightOn || battery <= 0) return;
@@ -892,12 +886,6 @@ export function RoomScene({
           <span>Свети в окно!</span>
           {isEasyMode && <em>{grandmaTimeLeft.toFixed(1)}s</em>}
           <b style={{ width: `${grandmaRepelProgress * 100}%` }} />
-        </div>
-      )}
-      {areMonstersEnabled && isBatteryThiefVisible && (
-        <div className="battery-thief-warning">
-          <span>Бей ломом, пока он не забрал батарейку!</span>
-          <b style={{ width: `${(batteryThiefTimeLeft / currentBatteryThiefReactionMs) * 100}%` }} />
         </div>
       )}
       {isTutorialPromptVisible && (

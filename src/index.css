@@ -1854,10 +1854,10 @@ input {
 
 .battery-thief {
   position: absolute;
-  left: 10.5%;
-  bottom: 24%;
-  z-index: 6;
-  width: clamp(150px, 15vw, 220px);
+  left: 18%;
+  bottom: 20%;
+  z-index: 8;
+  width: clamp(132px, 12vw, 196px);
   aspect-ratio: 1;
   height: auto;
   overflow: visible;
@@ -1865,6 +1865,7 @@ input {
   padding: 0;
   background: transparent;
   box-shadow: none;
+  transform: translateX(-50%);
   animation: batteryThiefPop 520ms ease-out forwards;
 }
 
@@ -1887,9 +1888,9 @@ input {
 }
 
 .room-scene-phone .battery-thief {
-  left: 10.5%;
-  bottom: 22%;
-  width: clamp(150px, 24vw, 220px);
+  left: 18%;
+  bottom: 18%;
+  width: clamp(126px, 18vw, 186px);
 }
 
 .ceiling-stalker {
@@ -2097,33 +2098,6 @@ input {
   border-radius: 999px;
   background: linear-gradient(90deg, #ffdddd, #c01521);
   box-shadow: 0 0 14px rgba(192, 21, 33, 0.56);
-}
-
-.battery-thief-warning {
-  position: absolute;
-  left: 50%;
-  bottom: 118px;
-  z-index: 12;
-  width: min(520px, calc(100vw - 28px));
-  transform: translateX(-50%);
-  overflow: hidden;
-  border: 1px solid rgba(255, 226, 150, 0.28);
-  border-radius: 6px;
-  padding: 12px 14px 16px;
-  background: rgba(0, 0, 0, 0.78);
-  color: #fff0df;
-  font-size: 15px;
-  font-weight: 900;
-  text-align: center;
-  text-shadow: 0 2px 8px #000;
-}
-
-.battery-thief-warning b {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #ffe296, #c01521);
 }
 
 .stalker-screamer {
