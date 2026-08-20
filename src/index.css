@@ -1858,8 +1858,8 @@ input {
   left: 18%;
   bottom: 34%;
   z-index: 8;
-  width: clamp(210px, 20vw, 310px);
-  height: clamp(150px, 14vw, 218px);
+  width: clamp(250px, 25vw, 390px);
+  height: clamp(120px, 12vw, 190px);
   overflow: visible;
   border: 0;
   padding: 0;
@@ -1880,8 +1880,6 @@ input {
   height: 100%;
   object-fit: contain;
   mix-blend-mode: screen;
-  transform: scaleX(3);
-  transform-origin: center bottom;
   filter:
     brightness(0.82)
     contrast(1.18)
@@ -1892,8 +1890,8 @@ input {
 .room-scene-phone .battery-thief {
   left: 18%;
   bottom: 33%;
-  width: clamp(196px, 31vw, 300px);
-  height: clamp(138px, 21vw, 206px);
+  width: clamp(220px, 38vw, 360px);
+  height: clamp(106px, 18vw, 174px);
 }
 
 .ceiling-stalker {
