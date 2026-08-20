@@ -422,7 +422,6 @@ export function RoomScene({
 
   function startTutorialGrandma() {
     playGrandmaKnocks();
-    setHeldItem('flashlight');
     setIsFlashlightOn(true);
     setIsGrandmaVisible(true);
     setGrandmaRepelProgress(0);
@@ -433,7 +432,6 @@ export function RoomScene({
   }
 
   function startTutorialStalker() {
-    setHeldItem('cross');
     setIsStalkerVisible(true);
     setIsStalkerMinigameActive(false);
     setStalkerSequence(createStalkerSequence());
@@ -446,7 +444,6 @@ export function RoomScene({
   }
 
   function startTutorialBatteryThief() {
-    setHeldItem('crowbar');
     setIsBatteryThiefVisible(true);
     setBatteryThiefTimeLeft(currentBatteryThiefReactionMs);
     setTutorialPhase('batteryThiefActive');
