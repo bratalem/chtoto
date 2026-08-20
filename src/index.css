@@ -1855,7 +1855,7 @@ input {
 .battery-thief {
   position: absolute;
   left: 18%;
-  bottom: 25%;
+  bottom: 31%;
   z-index: 8;
   width: clamp(170px, 16vw, 250px);
   height: clamp(150px, 14vw, 218px);
@@ -1888,7 +1888,7 @@ input {
 
 .room-scene-phone .battery-thief {
   left: 18%;
-  bottom: 24%;
+  bottom: 30%;
   width: clamp(156px, 24vw, 236px);
   height: clamp(138px, 21vw, 206px);
 }
