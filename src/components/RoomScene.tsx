@@ -325,14 +325,17 @@ export function RoomScene({
     crowbarSwingTimer.current = window.setTimeout(() => setIsCrowbarSwinging(false), 360);
   }
 
-  function startStalkerMinigame() {
-    if (!isStalkerVisible || isStalkerMinigameActive || heldItem !== 'cross' || !isCrossAimedAtStalker()) return;
-
+  function beginStalkerMinigame() {
     setIsAimingAtStalker(true);
     setIsStalkerMinigameActive(true);
     setStalkerSequence(createStalkerSequence());
     setStalkerButtonPosition(createStalkerButtonPosition());
     setStalkerKeyTimeLeft(stalkerMinigameTimeMs);
+  }
+
+  function startStalkerMinigame() {
+    if (!isStalkerVisible || isStalkerMinigameActive || heldItem !== 'cross' || !isCrossAimedAtStalker()) return;
+    beginStalkerMinigame();
   }
 
   function chooseItem(item: HeldItem) {
@@ -722,7 +725,7 @@ export function RoomScene({
       setIsAimingAtStalker(canStartMinigame);
 
       if (canStartMinigame && !isStalkerMinigameActive) {
-        startStalkerMinigame();
+        beginStalkerMinigame();
       }
     }, 100);
 
