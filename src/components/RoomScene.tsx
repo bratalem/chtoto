@@ -48,7 +48,6 @@ const batteryThiefReactionMs = 5200;
 const batteryThiefDrainPercent = 18;
 const areMonstersEnabled = true;
 const cameraSpeed = 1.6;
-const stalkerAimPaddingPx = 55;
 const grandmaAimPaddingPx = 70;
 
 function createStalkerButtonPosition(): StalkerButtonPosition {
@@ -146,7 +145,6 @@ export function RoomScene({
   const [flashlightToggleGrace, setFlashlightToggleGrace] = useState(false);
   const [, setHasReadGrandmaInstruction] = useState(false);
   const [, setHasReadStalkerInstruction] = useState(false);
-  const currentStalkerAimPaddingPx = tutorialMode ? 160 : showMobileControls ? 220 : stalkerAimPaddingPx;
   const currentGrandmaAimPaddingPx = tutorialMode ? 180 : showMobileControls ? 20 : grandmaAimPaddingPx;
   const nightPressure = getNightPressure(currentNight);
   const currentStalkerReactionMs = Math.max(1500, stalkerReactionMs - nightPressure * 300);
@@ -333,7 +331,7 @@ export function RoomScene({
   }
 
   function startStalkerMinigame() {
-    if (!isStalkerVisible || isStalkerMinigameActive || heldItem !== 'cross' || !isCrossAimedAtStalker()) return;
+    if (!isStalkerVisible || isStalkerMinigameActive || heldItem !== 'cross') return;
     beginStalkerMinigame();
   }
 
@@ -498,22 +496,6 @@ export function RoomScene({
     return true;
   }
 
-  function isCrossAimedAtStalker() {
-    if (showMobileControls) return true;
-    if (!roomScene.current || !stalker.current) return false;
-
-    const sceneBounds = roomScene.current.getBoundingClientRect();
-    const stalkerBounds = stalker.current.getBoundingClientRect();
-    const aimX = sceneBounds.left + sceneBounds.width / 2;
-    const aimY = sceneBounds.top + sceneBounds.height / 2;
-    return (
-      aimX >= stalkerBounds.left - currentStalkerAimPaddingPx &&
-      aimX <= stalkerBounds.right + currentStalkerAimPaddingPx &&
-      aimY >= stalkerBounds.top - currentStalkerAimPaddingPx &&
-      aimY <= stalkerBounds.bottom + currentStalkerAimPaddingPx
-    );
-  }
-
   function isFlashlightAimedAtGrandma() {
     if (!roomScene.current || !roomWindow.current) return false;
 
@@ -582,7 +564,7 @@ export function RoomScene({
   useEffect(() => {
     if (tutorialMode || !areMonstersEnabled || isGameOver || isNightComplete || isThreatActive) return;
 
-    const spawnDelay = Math.max(6500, 17000 + Math.random() * 10000 - nightPressure * 2200);
+    const spawnDelay = Math.max(4200, 6200 + Math.random() * 3600 - nightPressure * 900);
     const thiefTimer = window.setTimeout(() => {
       setIsBatteryThiefVisible(true);
       setBatteryThiefTimeLeft(currentBatteryThiefReactionMs);
@@ -721,7 +703,7 @@ export function RoomScene({
     if (!isStalkerVisible || isInstructionPromptVisible || isGameOver || isNightComplete) return;
 
     const stalkerTimer = window.setInterval(() => {
-      const canStartMinigame = heldItem === 'cross' && isCrossAimedAtStalker();
+      const canStartMinigame = heldItem === 'cross';
       setIsAimingAtStalker(canStartMinigame);
 
       if (canStartMinigame && !isStalkerMinigameActive) {
