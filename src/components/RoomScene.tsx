@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { CSSProperties, MouseEvent } from 'react';
+import type { CSSProperties, PointerEvent } from 'react';
 import batteryThief from '../assets/battery-thief.jpg';
 import ceilingStalker from '../assets/ceiling-stalker.png';
 import crowbarControl from '../assets/crowbar-control.png';
@@ -13,7 +13,6 @@ import knockOnWindow from '../assets/knock-on-the-window.mp3';
 import scaryGrandma from '../assets/scary-grandma.jpg';
 import scaryRoom from '../assets/scary-room.jpg';
 import stalkerImpact from '../assets/stalker-impact.mp3';
-import useCursor from '../assets/use-cursor.png';
 
 type HeldItem = 'flashlight' | 'cross' | 'crowbar';
 type StalkerInput = 'KeyQ' | 'KeyE' | 'KeyF' | 'KeyR';
@@ -371,9 +370,10 @@ export function RoomScene({
     }
   }
 
-  function handleRoomMouseDown(event: MouseEvent<HTMLElement>) {
-    if (showMobileControls || event.button !== 0) return;
+  function handleRoomPointerDown(event: PointerEvent<HTMLElement>) {
+    if (!showMobileControls && event.button !== 0) return;
     if ((event.target as HTMLElement).closest('button')) return;
+    if ((event.target as HTMLElement).closest('.mobile-controls-layer')) return;
     useHeldItem();
   }
 
@@ -800,7 +800,7 @@ export function RoomScene({
         isFlashlightActive ? '' : 'room-blackout',
       ].filter(Boolean).join(' ')}
       style={style}
-      onMouseDown={handleRoomMouseDown}
+      onPointerDown={handleRoomPointerDown}
       onMouseMove={(event) => {
         const bounds = event.currentTarget.getBoundingClientRect();
         setFlashOffset({
@@ -1000,14 +1000,6 @@ export function RoomScene({
         </div>
       </div>
       <div className="mobile-item-controls" aria-label="Предметы">
-        <button
-          className="mobile-use-button"
-          type="button"
-          onClick={useHeldItem}
-          aria-label="Use item"
-        >
-          <img src={useCursor} alt="" />
-        </button>
         <button
           className={heldItem === 'flashlight' ? 'mobile-item-button mobile-item-button-active' : 'mobile-item-button'}
           type="button"
