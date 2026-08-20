@@ -1866,19 +1866,31 @@ input {
   background:
     radial-gradient(circle at 50% 44%, rgba(80, 10, 12, 0.38), transparent 52%),
     #020202;
-  isolation: isolate;
   box-shadow:
     0 20px 32px rgba(0, 0, 0, 0.82),
+    inset 0 0 34px rgba(0, 0, 0, 0.8),
     0 0 24px rgba(190, 12, 26, 0.22);
   animation: batteryThiefPop 520ms ease-out forwards;
 }
 
+.battery-thief::after {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    radial-gradient(circle at 50% 42%, transparent 0 45%, rgba(0, 0, 0, 0.7) 75%, rgba(0, 0, 0, 0.9) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.14), rgba(0, 0, 0, 0.34));
+  content: '';
+  pointer-events: none;
+}
+
 .battery-thief img {
+  position: relative;
+  z-index: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  mix-blend-mode: multiply;
-  filter: brightness(0.86) contrast(1.7) saturate(0.82);
+  filter: brightness(1.02) contrast(1.18) saturate(0.94);
 }
 
 .ceiling-stalker {
