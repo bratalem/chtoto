@@ -21,6 +21,7 @@ type StalkerButtonPosition = {
   y: number;
 };
 type TutorialPhase = 'grandmaIntro' | 'grandmaActive' | 'stalkerIntro' | 'stalkerActive' | 'batteryThiefIntro' | 'batteryThiefActive' | 'done';
+type MonsterSpawn = 'grandma' | 'stalker' | 'batteryThief';
 
 type RoomSceneProps = {
   difficultyName: string;
@@ -34,11 +35,8 @@ type RoomSceneProps = {
   onNightUnlocked: (night: number) => void;
 };
 
-const minGrandmaSpawnDelayMs = 11000;
-const randomGrandmaSpawnDelayMs = 7000;
-const firstGrandmaSpawnDelayMs = 14000;
-const minStalkerSpawnDelayMs = 8000;
-const randomStalkerSpawnDelayMs = 8000;
+const minMonsterSpawnDelayMs = 9000;
+const randomMonsterSpawnDelayMs = 5000;
 const nightDurationSeconds = 5 * 60;
 const finalNight = 5;
 const stalkerMinigameLength = 4;
@@ -125,7 +123,6 @@ export function RoomScene({
   const roomWindow = useRef<HTMLDivElement | null>(null);
   const stalker = useRef<HTMLDivElement | null>(null);
   const batteryThiefRef = useRef<HTMLButtonElement | null>(null);
-  const hasGrandmaVisited = useRef(false);
   const knockSound = useRef<HTMLAudioElement | null>(null);
   const deathSound = useRef<HTMLAudioElement | null>(null);
   const stalkerImpactSound = useRef<HTMLAudioElement | null>(null);
@@ -382,6 +379,31 @@ export function RoomScene({
     if (tutorialMode && tutorialPhase === 'batteryThiefActive') setTutorialPhase('done');
   }
 
+  function spawnGrandma() {
+    playGrandmaKnocks();
+    setIsGrandmaVisible(true);
+    setGrandmaRepelProgress(0);
+    setGrandmaTimeLeft(currentGrandmaReactionSeconds);
+    setIsAimingAtGrandma(false);
+    setHasReadGrandmaInstruction(false);
+  }
+
+  function spawnStalker() {
+    setIsStalkerVisible(true);
+    setIsStalkerMinigameActive(false);
+    setStalkerSequence(createStalkerSequence());
+    setStalkerStep(0);
+    setStalkerButtonPosition(createStalkerButtonPosition());
+    setStalkerKeyTimeLeft(stalkerMinigameTimeMs);
+    setStalkerReactionLeft(currentStalkerReactionMs);
+    setHasReadStalkerInstruction(false);
+  }
+
+  function spawnBatteryThief() {
+    setIsBatteryThiefVisible(true);
+    setBatteryThiefTimeLeft(currentBatteryThiefReactionMs);
+  }
+
   function moveJoystick(clientX: number, clientY: number, element: HTMLDivElement) {
     const bounds = element.getBoundingClientRect();
     const radius = bounds.width / 2;
@@ -546,32 +568,32 @@ export function RoomScene({
   useEffect(() => {
     if (tutorialMode || !areMonstersEnabled || isGameOver || isNightComplete || isThreatActive) return;
 
-    const spawnPressureMs = nightPressure * 1300;
-    const stalkerTimer = window.setTimeout(() => {
-      setIsStalkerVisible(true);
-      setIsStalkerMinigameActive(false);
-      setStalkerSequence(createStalkerSequence());
-      setStalkerStep(0);
-      setStalkerButtonPosition(createStalkerButtonPosition());
-      setStalkerKeyTimeLeft(stalkerMinigameTimeMs);
-      setStalkerReactionLeft(currentStalkerReactionMs);
-      setHasReadStalkerInstruction(false);
-    }, Math.max(3500, minStalkerSpawnDelayMs + Math.random() * randomStalkerSpawnDelayMs - spawnPressureMs));
+    const difficultyPressure = Math.max(0, 4 - batteryDrainSeconds);
+    const pressureDelayMs = difficultyPressure * 1200 + nightPressure * 650;
+    const minDelay = Math.max(4200, minMonsterSpawnDelayMs - pressureDelayMs);
+    const randomDelay = Math.max(1600, randomMonsterSpawnDelayMs - difficultyPressure * 650 - nightPressure * 280);
+    const monsterTimer = window.setTimeout(() => {
+      const monsters: MonsterSpawn[] = ['grandma', 'stalker', 'batteryThief'];
+      const nextMonster = monsters[Math.floor(Math.random() * monsters.length)];
 
-    return () => window.clearTimeout(stalkerTimer);
-  }, [currentNight, currentStalkerReactionMs, isGameOver, isNightComplete, isThreatActive, nightPressure, stalkerMinigameTimeMs, tutorialMode]);
+      if (nextMonster === 'grandma') spawnGrandma();
+      if (nextMonster === 'stalker') spawnStalker();
+      if (nextMonster === 'batteryThief') spawnBatteryThief();
+    }, minDelay + Math.random() * randomDelay);
 
-  useEffect(() => {
-    if (tutorialMode || !areMonstersEnabled || isGameOver || isNightComplete || isThreatActive) return;
-
-    const spawnDelay = Math.max(4200, 6200 + Math.random() * 3600 - nightPressure * 900);
-    const thiefTimer = window.setTimeout(() => {
-      setIsBatteryThiefVisible(true);
-      setBatteryThiefTimeLeft(currentBatteryThiefReactionMs);
-    }, spawnDelay);
-
-    return () => window.clearTimeout(thiefTimer);
-  }, [currentBatteryThiefReactionMs, isGameOver, isNightComplete, isThreatActive, nightPressure, tutorialMode]);
+    return () => window.clearTimeout(monsterTimer);
+  }, [
+    batteryDrainSeconds,
+    currentBatteryThiefReactionMs,
+    currentGrandmaReactionSeconds,
+    currentStalkerReactionMs,
+    isGameOver,
+    isNightComplete,
+    isThreatActive,
+    nightPressure,
+    stalkerMinigameTimeMs,
+    tutorialMode,
+  ]);
 
   useEffect(() => {
     if (!isBatteryThiefVisible || isInstructionPromptVisible || isGameOver || isNightComplete) return;
@@ -631,28 +653,6 @@ export function RoomScene({
 
     return () => window.clearInterval(flickerTimer);
   }, [battery, heldItem, isCorridorOpen, isFlashlightOn, isGameOver, isNightComplete]);
-
-  useEffect(() => {
-    if (tutorialMode || !areMonstersEnabled || isGameOver || isNightComplete || isThreatActive) return;
-
-    const difficultyStep = Math.max(0, Math.round((4 - batteryDrainSeconds) / 1));
-    const difficultyDelayBonus = difficultyStep * 500 + nightPressure * 1400;
-    const spawnDelay = hasGrandmaVisited.current
-      ? Math.max(3500, minGrandmaSpawnDelayMs + Math.random() * randomGrandmaSpawnDelayMs - difficultyDelayBonus)
-      : Math.max(4500, firstGrandmaSpawnDelayMs - nightPressure * 1800);
-    const visitTimer = window.setTimeout(() => {
-      hasGrandmaVisited.current = true;
-      playGrandmaKnocks();
-
-      setIsGrandmaVisible(true);
-      setGrandmaRepelProgress(0);
-      setGrandmaTimeLeft(currentGrandmaReactionSeconds);
-      setIsAimingAtGrandma(false);
-      setHasReadGrandmaInstruction(false);
-    }, spawnDelay);
-
-    return () => window.clearTimeout(visitTimer);
-  }, [batteryDrainSeconds, currentGrandmaReactionSeconds, isGameOver, isNightComplete, isThreatActive, nightPressure, tutorialMode]);
 
   useEffect(() => {
     if (!isGrandmaVisible || isInstructionPromptVisible || isGameOver || isNightComplete) return;
