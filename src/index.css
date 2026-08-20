@@ -1880,6 +1880,8 @@ input {
   height: 100%;
   object-fit: contain;
   mix-blend-mode: screen;
+  transform: scaleX(3);
+  transform-origin: center bottom;
   filter:
     brightness(0.82)
     contrast(1.18)

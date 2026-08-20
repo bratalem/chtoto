@@ -874,7 +874,7 @@ export function RoomScene({
           <b style={{ width: `${stalkerReactionProgress}%` }} />
         </div>
       )}
-      {isNightTitleVisible && <h1>{getNightTitle(currentNight)}</h1>}
+      {isNightTitleVisible && !tutorialMode && <h1>{getNightTitle(currentNight)}</h1>}
       {isDoorHovered && !isCorridorOpen && <p className="door-prompt">Нажмите E, чтобы заглянуть</p>}
       {areMonstersEnabled && isStalkerScreamerVisible && (
         <div className="stalker-screamer" aria-hidden="true">
