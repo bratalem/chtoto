@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent } from 'react';
-import batteryThief from '../assets/battery-thief.jpg';
+import batteryThief from '../assets/balloon-boy-bed.jpg';
 import ceilingStalker from '../assets/ceiling-stalker.png';
 import crowbarControl from '../assets/crowbar-control.png';
 import crowbarPixel from '../assets/crowbar-pixel.png';
