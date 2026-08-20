@@ -995,10 +995,10 @@ export function RoomScene({
         </div>
       )}
       <div className="room-hud">
-        <span>Ночь {currentNight}/{finalNight}: {nightMinutes}:{nightSeconds}</span>
+        {!tutorialMode && <span>Ночь {currentNight}/{finalNight}: {nightMinutes}:{nightSeconds}</span>}
         <span>Фонарик: {isFlashlightOn ? 'Вкл' : 'Выкл'}</span>
         <span>Батарея: {Math.ceil(battery)}%</span>
-        <span>Сложность: {difficultyName}</span>
+        {!tutorialMode && <span>Сложность: {difficultyName}</span>}
       </div>
     </section>
   );
