@@ -1855,11 +1855,10 @@ input {
 .battery-thief {
   position: absolute;
   left: 18%;
-  bottom: 20%;
+  bottom: 25%;
   z-index: 8;
-  width: clamp(132px, 12vw, 196px);
-  aspect-ratio: 1;
-  height: auto;
+  width: clamp(170px, 16vw, 250px);
+  height: clamp(150px, 14vw, 218px);
   overflow: visible;
   border: 0;
   padding: 0;
@@ -1889,8 +1888,9 @@ input {
 
 .room-scene-phone .battery-thief {
   left: 18%;
-  bottom: 18%;
-  width: clamp(126px, 18vw, 186px);
+  bottom: 24%;
+  width: clamp(156px, 24vw, 236px);
+  height: clamp(138px, 21vw, 206px);
 }
 
 .ceiling-stalker {
