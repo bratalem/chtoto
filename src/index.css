@@ -1138,7 +1138,8 @@ input {
 .motel-2d-door,
 .motel-2d-window {
   position: absolute;
-  transform: translateX(-50%);
+  transform: translateX(-50%) scaleX(3);
+  transform-origin: center bottom;
   background: #1a1d1e;
 }
 
