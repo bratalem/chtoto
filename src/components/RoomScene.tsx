@@ -800,6 +800,11 @@ export function RoomScene({
           </div>
         )}
         <div className="room-bed" aria-hidden="true" />
+        {areMonstersEnabled && isBatteryThiefVisible && (
+          <button className="battery-thief" type="button" ref={batteryThiefRef} onClick={useHeldItem} aria-label="Hit Balloon Boy">
+            <img src={batteryThief} alt="" />
+          </button>
+        )}
         <div className="room-pipe" aria-hidden="true">
           <span className="water-drop water-drop-one" />
           <span className="water-drop water-drop-two" />
@@ -847,11 +852,6 @@ export function RoomScene({
           style={{ backgroundImage: `url(${crowbarSwingSheet})` }}
           aria-hidden="true"
         />
-      )}
-      {areMonstersEnabled && isBatteryThiefVisible && (
-        <button className="battery-thief" type="button" ref={batteryThiefRef} onClick={useHeldItem} aria-label="Ударить воришку батарейки">
-          <img src={batteryThief} alt="" />
-        </button>
       )}
       {areMonstersEnabled && isStalkerVisible && (
         <div className="blood-drips" aria-hidden="true">
