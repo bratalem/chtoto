@@ -50,7 +50,7 @@ const difficulties: Difficulty[] = [
   },
 ];
 
-type Screen = 'menu' | 'nightSelect' | 'tutorialPrompt' | 'tutorialWarning' | 'tutorial' | 'soundWarning' | 'story' | 'eyes' | 'room';
+type Screen = 'menu' | 'nightSelect' | 'tutorialPrompt' | 'tutorialWarning' | 'tutorial' | 'story' | 'eyes' | 'room';
 type DeviceMode = 'computer' | 'phone';
 
 export function HomePage() {
@@ -135,7 +135,11 @@ export function HomePage() {
     timers.current.forEach((timer) => window.clearTimeout(timer));
     setSelectedNight(night);
     setIsTutorialRun(false);
-    setScreen('soundWarning');
+    setScreen('story');
+    timers.current = [
+      window.setTimeout(() => setScreen('eyes'), 6200),
+      window.setTimeout(() => setScreen('room'), 6300),
+    ];
   }
 
   function startTutorialFromNightSelect() {
@@ -157,12 +161,6 @@ export function HomePage() {
   }
 
   function continueAfterTutorial() {
-    timers.current.forEach((timer) => window.clearTimeout(timer));
-    setIsTutorialRun(false);
-    setScreen('soundWarning');
-  }
-
-  function continueAfterSoundWarning() {
     timers.current.forEach((timer) => window.clearTimeout(timer));
     setIsTutorialRun(false);
     setScreen('story');
@@ -385,18 +383,6 @@ export function HomePage() {
               Все равно пропустить
             </button>
           </div>
-        </section>
-      )}
-
-      {screen === 'soundWarning' && (
-        <section className="story-panel sound-warning-panel" aria-label="Предупреждение">
-          <h1>Включи звук</h1>
-          <p>
-            Лучше играть со звуком: он обязателен для игрового процесса. Некоторые опасности можно заметить только по звуку.
-          </p>
-          <button className="horror-button horror-button-primary story-start" type="button" onClick={continueAfterSoundWarning}>
-            Продолжить
-          </button>
         </section>
       )}
 

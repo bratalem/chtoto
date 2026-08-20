@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, MouseEvent } from 'react';
 import batteryThief from '../assets/battery-thief.jpg';
 import ceilingStalker from '../assets/ceiling-stalker.png';
 import crowbarControl from '../assets/crowbar-control.png';
@@ -13,6 +13,7 @@ import knockOnWindow from '../assets/knock-on-the-window.mp3';
 import scaryGrandma from '../assets/scary-grandma.jpg';
 import scaryRoom from '../assets/scary-room.jpg';
 import stalkerImpact from '../assets/stalker-impact.mp3';
+import useCursor from '../assets/use-cursor.png';
 
 type HeldItem = 'flashlight' | 'cross' | 'crowbar';
 type StalkerInput = 'KeyQ' | 'KeyE' | 'KeyF' | 'KeyR';
@@ -305,14 +306,39 @@ export function RoomScene({
     });
   }
 
+  function toggleFlashlight() {
+    if (battery <= 0 || !canToggleFlashlight) return;
+
+    setIsFlashlightOn((current) => {
+      const next = !current;
+      if (next) setFlashlightToggleGrace(true);
+      return next;
+    });
+    setCanToggleFlashlight(false);
+    toggleTimer.current = window.setTimeout(() => setCanToggleFlashlight(true), 700);
+  }
+
+  function swingCrowbar() {
+    if (crowbarSwingTimer.current) window.clearTimeout(crowbarSwingTimer.current);
+    setIsCrowbarSwinging(false);
+    window.setTimeout(() => setIsCrowbarSwinging(true), 0);
+    crowbarSwingTimer.current = window.setTimeout(() => setIsCrowbarSwinging(false), 360);
+  }
+
+  function startStalkerMinigame() {
+    if (!isStalkerVisible || isStalkerMinigameActive || heldItem !== 'cross' || !isCrossAimedAtStalker()) return;
+
+    setIsAimingAtStalker(true);
+    setIsStalkerMinigameActive(true);
+    setStalkerSequence(createStalkerSequence());
+    setStalkerButtonPosition(createStalkerButtonPosition());
+    setStalkerKeyTimeLeft(stalkerMinigameTimeMs);
+  }
+
   function chooseItem(item: HeldItem) {
     if (isInstructionPromptVisible || isGameOver || isNightComplete) return;
-    if (item === 'flashlight' && heldItem === 'flashlight' && battery > 0) {
-      setIsFlashlightOn((current) => {
-        const next = !current;
-        if (next) setFlashlightToggleGrace(true);
-        return next;
-      });
+    if (item === 'flashlight' && heldItem === 'flashlight') {
+      toggleFlashlight();
       return;
     }
 
@@ -323,12 +349,33 @@ export function RoomScene({
     }
   }
 
+  function useHeldItem() {
+    if (isInstructionPromptVisible || isGameOver || isNightComplete) return;
+
+    if (heldItem === 'flashlight') {
+      toggleFlashlight();
+      return;
+    }
+
+    if (heldItem === 'cross') {
+      startStalkerMinigame();
+      return;
+    }
+
+    if (heldItem === 'crowbar') {
+      swingCrowbar();
+      hitBatteryThief();
+    }
+  }
+
+  function handleRoomMouseDown(event: MouseEvent<HTMLElement>) {
+    if (showMobileControls || event.button !== 0) return;
+    if ((event.target as HTMLElement).closest('button')) return;
+    useHeldItem();
+  }
+
   function hitBatteryThief() {
     if (!isBatteryThiefVisible || heldItem !== 'crowbar' || isInstructionPromptVisible || isGameOver || isNightComplete) return;
-    if (crowbarSwingTimer.current) window.clearTimeout(crowbarSwingTimer.current);
-    setIsCrowbarSwinging(false);
-    window.setTimeout(() => setIsCrowbarSwinging(true), 0);
-    crowbarSwingTimer.current = window.setTimeout(() => setIsCrowbarSwinging(false), 360);
     setIsBatteryThiefVisible(false);
     setBatteryThiefTimeLeft(currentBatteryThiefReactionMs);
     if (tutorialMode && tutorialPhase === 'batteryThiefActive') setTutorialPhase('done');
@@ -675,10 +722,7 @@ export function RoomScene({
       setIsAimingAtStalker(canStartMinigame);
 
       if (canStartMinigame && !isStalkerMinigameActive) {
-        setIsStalkerMinigameActive(true);
-        setStalkerSequence(createStalkerSequence());
-        setStalkerButtonPosition(createStalkerButtonPosition());
-        setStalkerKeyTimeLeft(stalkerMinigameTimeMs);
+        startStalkerMinigame();
       }
     }, 100);
 
@@ -753,6 +797,7 @@ export function RoomScene({
         isFlashlightActive ? '' : 'room-blackout',
       ].filter(Boolean).join(' ')}
       style={style}
+      onMouseDown={handleRoomMouseDown}
       onMouseMove={(event) => {
         const bounds = event.currentTarget.getBoundingClientRect();
         setFlashOffset({
@@ -806,7 +851,7 @@ export function RoomScene({
           <img src={heldCross} alt="" />
         </div>
       )}
-      {heldItem === 'crowbar' && (
+      {heldItem === 'crowbar' && !isCrowbarSwinging && (
         <div className="held-crowbar" aria-hidden="true">
           <img src={crowbarPixel} alt="" />
         </div>
@@ -819,7 +864,7 @@ export function RoomScene({
         />
       )}
       {areMonstersEnabled && isBatteryThiefVisible && (
-        <button className="battery-thief" type="button" ref={batteryThiefRef} onClick={hitBatteryThief} aria-label="Ударить воришку батарейки">
+        <button className="battery-thief" type="button" ref={batteryThiefRef} onClick={useHeldItem} aria-label="Ударить воришку батарейки">
           <img src={batteryThief} alt="" />
         </button>
       )}
@@ -952,6 +997,14 @@ export function RoomScene({
         </div>
       </div>
       <div className="mobile-item-controls" aria-label="Предметы">
+        <button
+          className="mobile-use-button"
+          type="button"
+          onClick={useHeldItem}
+          aria-label="Use item"
+        >
+          <img src={useCursor} alt="" />
+        </button>
         <button
           className={heldItem === 'flashlight' ? 'mobile-item-button mobile-item-button-active' : 'mobile-item-button'}
           type="button"
